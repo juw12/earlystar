@@ -1,4 +1,54 @@
-# RepoRadar
+<!-- HERO:START -->
+<p align="center">
+  <a href="https://juw12.github.io/reporadar/"><img src="docs/media/banner.jpg" alt="RepoRadar: Find GitHub repos before they trend." width="100%"></a>
+</p>
+
+<p align="center">
+  <b>Find GitHub repos before they trend.</b><br>
+  See the repos gaining stars fastest right now, filter them in seconds and keep a watchlist.
+</p>
+
+<p align="center">
+  <a href="https://juw12.github.io/reporadar/"><b>Try it live</b></a> ·
+  <a href="#see-it-in-action">See it in action</a> ·
+  <a href="#highlights">Highlights</a> ·
+  <a href="https://github.com/juw12">More by juw12</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/juw12/reporadar"><img src="https://img.shields.io/github/last-commit/juw12/reporadar?label=updated&color=2563eb" alt="Last updated"></a>
+  <a href="https://juw12.github.io/reporadar/"><img src="https://img.shields.io/badge/demo-live-2ea44f" alt="Live demo"></a>
+  <img src="https://img.shields.io/badge/Web-24292f" alt="Web">
+  <img src="https://img.shields.io/badge/license-MIT-2563eb" alt="MIT license">
+</p>
+
+<a id="highlights"></a>
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <b>Movers and rising</b><br>
+      Repos gaining the most stars in the last 24 hours, ranked.
+    </td>
+    <td width="33%" valign="top">
+      <b>Filter fast</b><br>
+      Narrow the list by language, stars and age.
+    </td>
+    <td width="33%" valign="top">
+      <b>Watchlist</b><br>
+      Keep an eye on repos before everyone else does.
+    </td>
+  </tr>
+</table>
+
+## See it in action
+
+<p align="center">
+  <a href="https://juw12.github.io/reporadar/"><img src="docs/media/demo.png" alt="RepoRadar screenshot" width="820"></a><br>
+  <sub>Open the interactive demo at <a href="https://juw12.github.io/reporadar/">juw12.github.io/reporadar/</a></sub>
+</p>
+<!-- HERO:END -->
+
+## About
 
 **Find GitHub repos before they trend.** Live at **[juw12.github.io/reporadar](https://juw12.github.io/reporadar/)**.
 
