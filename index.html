@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RepoRadar — find GitHub repos before they trend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  // Apply the saved (or system) theme before first paint to avoid a flash.
+  try {
+    const saved = JSON.parse(localStorage.getItem("rr:theme"));
+    document.documentElement.dataset.theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  } catch {
+    document.documentElement.dataset.theme = "light";
+  }
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fafafa; --surface: #ffffff; --surface-2: #f4f4f5; --surface-3: #e9e9ec;
+    --border: #e4e4e7; --border-strong: #d4d4d8;
+    --text: #09090b; --text-2: #3f3f46; --muted: #71717a; --faint: #a1a1aa;
+    --accent: #4f46e5; --accent-soft: #eef2ff; --accent-text: #4338ca;
+    --good: #15803d; --good-soft: #ecfdf3;
+    --warn: #c2410c; --warn-soft: #fff4ec;
+    --bad: #dc2626;
+    --ring: 0 0 0 3px rgba(79, 70, 229, .18);
+    --shadow-sm: 0 1px 2px rgba(9, 9, 11, .04);
+    --shadow-lg: 0 24px 64px -12px rgba(9, 9, 11, .28);
+    /* aliases still used by inline chart templates */
+    --panel: var(--surface); --panel2: var(--surface-2); --chip: var(--surface-2); --accent2: var(--accent);
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #09090b; --surface: #111113; --surface-2: #19191c; --surface-3: #242428;
+    --border: #232327; --border-strong: #36363c;
+    --text: #fafafa; --text-2: #d4d4d8; --muted: #a1a1aa; --faint: #71717a;
+    --accent: #818cf8; --accent-soft: rgba(129, 140, 248, .12); --accent-text: #a5b4fc;
+    --good: #4ade80; --good-soft: rgba(74, 222, 128, .10);
+    --warn: #fb923c; --warn-soft: rgba(251, 146, 60, .12);
+    --bad: #f87171;
+    --ring: 0 0 0 3px rgba(129, 140, 248, .28);
+    --shadow-sm: none;
+    --shadow-lg: 0 24px 64px -12px rgba(0, 0, 0, .7);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif; }
+  a { color: inherit; text-decoration: none; }
+  button, select, input { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: var(--ring); border-radius: 6px; }
+  svg.i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .muted { color: var(--muted); }
+  kbd { font: 500 11px/1 ui-monospace, "SF Mono", Consolas, monospace; padding: 3px 5px; border: 1px solid var(--border);
+        border-bottom-width: 2px; border-radius: 5px; color: var(--muted); background: var(--surface); }
+
+  /* ---------- header ---------- */
+  header.top { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--border);
+               background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: saturate(180%) blur(12px); }
+  .top-inner { max-width: 1320px; margin: 0 auto; height: 60px; padding: 0 24px; display: flex; align-items: center; gap: 22px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15.5px; letter-spacing: -.02em; white-space: nowrap; }
+  .nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .nav button { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px; border: 0; border-radius: 8px;
+                background: none; color: var(--muted); font-weight: 500; font-size: 13.5px; cursor: pointer; white-space: nowrap;
+                transition: color .15s, background .15s; }
+  .nav button:hover { color: var(--text); background: var(--surface-2); }
+  .nav button.active { color: var(--text); background: var(--surface); box-shadow: 0 0 0 1px var(--border), var(--shadow-sm); }
+  .nav button.active svg { color: var(--accent); }
+  .top-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .search { position: relative; width: 280px; display: block; }
+  .search > svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+  .search input { width: 100%; height: 34px; padding: 0 34px 0 32px; border-radius: 8px; border: 1px solid var(--border);
+                  background: var(--surface); outline: none; transition: border-color .15s, box-shadow .15s; }
+  .search input::placeholder { color: var(--faint); }
+  .search input:focus { border-color: var(--accent); box-shadow: var(--ring); }
+  .search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+  .ghost-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--border);
+                background: var(--surface); color: var(--text-2); cursor: pointer; transition: background .15s, color .15s; flex: none; }
+  .ghost-icon:hover { background: var(--surface-2); color: var(--text); }
+  .ghost-icon svg { width: 16px; height: 16px; }
+  [data-theme="dark"] .i-moon, html:not([data-theme="dark"]) .i-sun { display: none; }
+
+  /* ---------- buttons ---------- */
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border);
+         background: var(--surface); color: var(--text); font-weight: 500; font-size: 13px; cursor: pointer; white-space: nowrap;
+         box-shadow: var(--shadow-sm); transition: background .15s, opacity .15s; }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--text); border-color: var(--text); color: var(--bg); }
+  .btn.primary:hover { opacity: .88; }
+  .btn.small { height: 30px; padding: 0 10px; font-size: 12.5px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  /* ---------- layout ---------- */
+  main { max-width: 1320px; margin: 0 auto; padding: 28px 24px 80px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; }
+  @media (max-width: 1100px) {
+    main { grid-template-columns: 1fr; }
+    aside { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .search { width: 200px; }
+  }
+
+  /* ---------- page heading (#status) ---------- */
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .page-head h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -.025em; display: flex; align-items: center; gap: 10px; }
+  .page-head .count { font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--muted); background: var(--surface);
+                      border: 1px solid var(--border); border-radius: 99px; padding: 1px 9px; font-variant-numeric: tabular-nums; }
+  .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
+  .page-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 99px; border: 1px solid var(--border);
+          background: var(--surface); white-space: nowrap; font-size: 12px; color: var(--muted); }
+  .pill b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pill svg { width: 12px; height: 12px; }
+  button.pill { cursor: pointer; color: var(--text); font-weight: 500; }
+  button.pill:hover { background: var(--surface-2); }
+  button.pill:disabled { opacity: .5; cursor: default; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); display: inline-block; }
+  .dot.live { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+  .dot.busy { background: var(--good); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-sm); margin-bottom: 14px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }
+  .toolbar-foot { display: flex; align-items: center; gap: 16px; padding: 8px 10px 8px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .toolbar-foot .grow { flex: 1; }
+  .field { display: inline-flex; align-items: center; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+           padding-left: 10px; font-size: 13px; transition: border-color .15s, box-shadow .15s; }
+  .field:hover { border-color: var(--border-strong); }
+  .field:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+  .field:has(:disabled) { opacity: .45; }
+  .field > span { color: var(--muted); white-space: nowrap; }
+  .field select, .field input { height: 100%; border: 0; background: transparent; outline: none; padding: 0 10px 0 6px; font-weight: 500; color: var(--text); min-width: 0; }
+  .field select { appearance: none; padding-right: 28px; cursor: pointer; background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
+                  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+  .field select option { background: var(--surface); color: var(--text); }
+  .field input[type=number] { width: 70px; }
+  .field input[type=text] { width: 104px; }
+  .field input::placeholder { color: var(--faint); font-weight: 400; }
+  .switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; user-select: none; }
+  .switch input { appearance: none; width: 30px; height: 18px; margin: 0; border-radius: 99px; background: var(--border-strong); position: relative; cursor: pointer; transition: background .15s; flex: none; }
+  .switch input::before { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff;
+                          box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s; }
+  .switch input:checked { background: var(--accent); }
+  .switch input:checked::before { transform: translateX(12px); }
+
+  /* ---------- repository list ---------- */
+  .list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden; }
+  .card { display: grid; grid-template-columns: 26px 40px minmax(0, 1fr) 128px; gap: 0 14px; align-items: start; padding: 16px 18px 16px 12px;
+          border-bottom: 1px solid var(--border); transition: background .12s; }
+  .card:last-child { border-bottom: 0; }
+  .card:hover { background: color-mix(in srgb, var(--surface-2) 60%, var(--surface)); }
+  .card.focused { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+  .card.seen .body, .card.seen .avatar, .card.seen .metric { opacity: .5; }
+  .rank { font-size: 13px; font-weight: 600; color: var(--faint); text-align: right; padding-top: 10px; font-variant-numeric: tabular-nums; }
+  .card:nth-child(-n+3) .rank { color: var(--text); }
+  .avatar { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); object-fit: cover; }
+  .title { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 26px; }
+  .name { font-size: 15px; font-weight: 600; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .name .owner { color: var(--muted); font-weight: 450; }
+  .name:hover { color: var(--accent-text); }
+  .tag { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 600;
+         background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; flex: none; }
+  .tag svg { width: 11px; height: 11px; }
+  .new-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .tag-hot { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .tag-up { background: var(--good-soft); color: var(--good); border-color: transparent; }
+  .desc { margin: 2px 0 8px; color: var(--text-2); font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .desc.none { color: var(--faint); font-style: italic; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .meta > span { display: inline-flex; align-items: center; gap: 5px; }
+  .meta svg.i { width: 13px; height: 13px; color: var(--faint); }
+  .lang-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+  .meta .lang-dot { margin: 0; }
+  .topics { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+  .chip { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; background: var(--surface-2); color: var(--text-2); cursor: pointer;
+          border: 1px solid var(--border); transition: border-color .12s, color .12s; white-space: nowrap; }
+  .chip:hover { border-color: var(--accent); color: var(--accent-text); }
+  .chip b { color: var(--faint); font-weight: 500; margin-left: 3px; }
+  .actions { margin-left: auto; display: flex; gap: 2px; flex: none; }
+  .icon-btn { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; border: 0; background: transparent; color: var(--muted);
+              cursor: pointer; opacity: 0; transition: opacity .12s, background .12s, color .12s; }
+  .card:hover .icon-btn, .card.focused .icon-btn, .card:focus-within .icon-btn, .icon-btn.on { opacity: 1; }
+  .icon-btn:hover { background: var(--surface-3); color: var(--text); }
+  .icon-btn.on { color: var(--accent); }
+  .icon-btn.on[data-act="bookmark"] svg { fill: currentColor; }
+  .metric { text-align: right; padding-top: 3px; }
+  .metric-value { font-size: 19px; font-weight: 650; letter-spacing: -.025em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .metric-value.up { color: var(--good); }
+  .metric-label { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .metric-src { font-size: 11px; color: var(--faint); }
+  .momentum { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .meter { width: 52px; height: 4px; background: var(--surface-3); border-radius: 99px; overflow: hidden; display: inline-block; }
+  .meter i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+  @media (max-width: 720px) {
+    .top-inner { gap: 12px; padding: 0 14px; }
+    .search { display: none; }
+    .card { grid-template-columns: 40px minmax(0, 1fr); }
+    .rank { display: none; }
+    .metric { grid-column: 2; text-align: left; display: flex; gap: 10px; align-items: baseline; padding-top: 8px; }
+    .momentum { display: none; }
+  }
+
+  .empty, .error { padding: 56px 24px; text-align: center; color: var(--muted); font-size: 13.5px; }
+  .error { color: var(--bad); }
+  .skeleton { height: 96px; border-bottom: 1px solid var(--border); background: linear-gradient(90deg, transparent 0%, var(--surface-2) 50%, transparent 100%);
+              background-size: 200% 100%; animation: sh 1.4s infinite; }
+  @keyframes sh { to { background-position: -200% 0; } }
+
+  /* ---------- sidebar ---------- */
+  aside { display: flex; flex-direction: column; gap: 16px; }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .box h3 { margin: 0 0 12px; font-size: 13px; font-weight: 600; letter-spacing: -.01em; }
+  .kpis, .stats-grid { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
+  .kpi { background: var(--surface); padding: 12px; min-width: 0; }
+  .kpi .v { font-size: 19px; font-weight: 650; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+  .kpi .k { font-size: 11.5px; color: var(--muted); }
+  .riser { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+  .riser img { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); }
+  .riser .k { font-size: 11.5px; color: var(--muted); }
+  .riser .n { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .riser .r { margin-left: auto; text-align: right; font-weight: 650; color: var(--good); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .riser .r span { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+  .hbar { display: grid; grid-template-columns: 92px 1fr 28px; gap: 10px; align-items: center; font-size: 12.5px; padding: 4px 0; cursor: pointer; color: var(--text-2); }
+  .hbar:hover span:first-child { color: var(--accent-text); }
+  .hbar .track { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .hbar .track i { display: block; height: 100%; border-radius: 99px; }
+  .hbar span:last-child { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+  .shortcuts { display: grid; grid-template-columns: auto 1fr; gap: 9px 12px; align-items: center; font-size: 12.5px; color: var(--muted); }
+  .shortcuts span:nth-child(odd) { display: flex; gap: 4px; }
+
+  /* ---------- drawer, modal, toast, compare ---------- */
+  .drawer-bg { position: fixed; inset: 0; background: rgba(9, 9, 11, .4); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 40; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(720px, 96vw); background: var(--bg); border-left: 1px solid var(--border);
+            transform: translateX(100%); transition: transform .3s cubic-bezier(.32, .72, 0, 1); z-index: 50; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
+  .drawer.open { transform: none; }
+  .drawer-bg.open { opacity: 1; pointer-events: auto; }
+  .drawer .dhead { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; background: var(--surface); }
+  .drawer .dhead .name { white-space: normal; font-size: 16px; }
+  .drawer .dbody { padding: 20px 22px; overflow: auto; flex: 1; }
+  .drawer iframe { width: 100%; min-height: 60vh; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+  .chart { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+  .chart svg text { fill: var(--muted); font-size: 11px; }
+  .chart .topics { display: flex; margin-top: 8px; }
+  .badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .badge.delta { background: var(--good-soft); color: var(--good); }
+  .modal { position: fixed; inset: 0; display: none; place-items: center; z-index: 60; background: rgba(9, 9, 11, .45); backdrop-filter: blur(2px); }
+  .modal.open { display: grid; }
+  .modal .inner { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: min(480px, 92vw); box-shadow: var(--shadow-lg); }
+  .modal h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .modal p { font-size: 13.5px; line-height: 1.6; }
+  .modal input { width: 100%; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); margin: 8px 0 16px; outline: none; }
+  .modal input:focus { border-color: var(--accent); box-shadow: var(--ring); }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 13px; font-weight: 500;
+           padding: 9px 16px; border-radius: 10px; box-shadow: var(--shadow-lg); z-index: 70; display: none; }
+  .compare-tray { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border);
+                  border-radius: 12px; padding: 8px 8px 8px 14px; display: none; gap: 10px; align-items: center; z-index: 30; box-shadow: var(--shadow-lg); font-size: 13px; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  table.cmp th, table.cmp td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+  table.cmp th { font-weight: 600; font-size: 12.5px; }
+  table.cmp th:first-child, table.cmp td:first-child { text-align: left; color: var(--muted); }
+  table.cmp td.best { color: var(--good); font-weight: 650; }
+
+  /* server-mode only UI */
+  .server-only { display: none !important; }
+  body.server .server-only { display: revert !important; }
+  body.server .nav .server-only { display: inline-flex !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+        <defs><linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+        <rect width="32" height="32" rx="8" fill="url(#brandGradient)"/>
+        <circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.6"/>
+        <circle cx="16" cy="16" r="4.5" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6"/>
+        <path d="M16 16 23.5 9.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="21.6" cy="11.2" r="1.9" fill="#fff"/>
+      </svg>
+      RepoRadar
+    </div>
+    <nav class="nav" id="modeTabs" aria-label="Views">
+      <button data-mode="movers" class="server-only" title="Biggest real star gains, from RepoRadar's own history"><i data-icon="trending"></i>Movers</button>
+      <button data-mode="rising" title="New repositories ranked by star velocity"><i data-icon="sparkles"></i>Rising</button>
+      <button data-mode="established" title="Popular repositories with recent activity"><i data-icon="activity"></i>Established</button>
+      <button data-mode="trending" class="server-only" title="Day-by-day archive of GitHub Trending"><i data-icon="calendar"></i>Trending</button>
+      <button data-mode="watch" title="Your bookmarked repositories"><i data-icon="bookmark"></i>Watchlist</button>
+    </nav>
+    <div class="top-actions">
+      <label class="search"><i data-icon="search"></i><input id="q" placeholder="Filter repositories…" autocomplete="off"><kbd>/</kbd></label>
+      <button class="ghost-icon" id="exportBtn" title="Export current list as CSV" aria-label="Export CSV"><i data-icon="download"></i></button>
+      <button class="ghost-icon" id="tokenBtn" title="GitHub token (higher rate limits)" aria-label="GitHub token"><i data-icon="key"></i></button>
+      <button class="ghost-icon" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme"><i data-icon="moon" data-class="i-moon"></i><i data-icon="sun" data-class="i-sun"></i></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div id="status"></div>
+    <div class="toolbar">
+      <div class="filters">
+        <label class="field"><span>Window</span><select id="window"></select></label>
+        <label class="field" id="dayField" style="display:none"><span>Day</span><select id="day"></select></label>
+        <label class="field"><span>Language</span><select id="lang"></select></label>
+        <label class="field"><span>Topic</span><input type="text" id="topic" placeholder="e.g. llm"></label>
+        <label class="field"><span>Min stars</span><input type="number" id="minStars" min="0" step="10"></label>
+        <label class="field"><span>Sort</span>
+          <select id="sort">
+            <option value="momentum">Momentum</option>
+            <option value="velocity">Stars / day</option>
+            <option value="delta">Star gain</option>
+            <option value="rank">Trending rank</option>
+            <option value="stars">Total stars</option>
+            <option value="forks">Forks</option>
+            <option value="newest">Newest</option>
+          </select>
+        </label>
+      </div>
+      <div class="toolbar-foot">
+        <label class="switch"><input type="checkbox" id="hideSeen"> Hide seen</label>
+        <label class="switch"><input type="checkbox" id="onlyNew"> New to me only</label>
+        <span class="grow"></span>
+        <button class="btn small" id="markAllSeen" title="Mark everything currently listed as seen"><i data-icon="checks"></i>Mark all seen</button>
+        <button class="btn small primary" id="refreshBtn"><i data-icon="refresh"></i>Refresh</button>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+  <aside>
+    <div class="box"><h3>Overview</h3><div id="kpis"></div></div>
+    <div class="box"><h3>Languages</h3><div id="langChart"></div></div>
+    <div class="box"><h3>Topics</h3><div class="cloud" id="topicCloud"></div></div>
+    <div class="box"><h3>Keyboard shortcuts</h3>
+      <div class="shortcuts">
+        <span><kbd>/</kbd></span><span>Search</span>
+        <span><kbd>j</kbd><kbd>k</kbd></span><span>Move down / up</span>
+        <span><kbd>Enter</kbd></span><span>Details &amp; README</span>
+        <span><kbd>o</kbd></span><span>Open on GitHub</span>
+        <span><kbd>b</kbd><kbd>s</kbd><kbd>c</kbd></span><span>Watch · seen · compare</span>
+        <span><kbd>1</kbd>–<kbd>5</kbd></span><span>Switch view</span>
+        <span><kbd>r</kbd></span><span>Refresh</span>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer">
+  <div class="dhead" id="dhead"></div>
+  <div class="dbody" id="dbody"></div>
+</div>
+
+<div class="modal" id="tokenModal">
+  <div class="inner">
+    <h3 style="margin-top:0">GitHub token (optional)</h3>
+    <p class="muted">Without a token, GitHub allows 10 searches/minute and 60 API calls/hour. A token with <b>no scopes</b> (read-only public data) raises this to 30 searches/minute and 5,000 calls/hour. It is stored only in this browser's localStorage.</p>
+    <input id="tokenInput" type="password" placeholder="ghp_… or github_pat_…">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" id="tokenClear">Remove</button>
+      <button class="btn" id="tokenCancel">Cancel</button>
+      <button class="btn primary" id="tokenSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="compare-tray" id="compareTray"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------- constants ---------- */
+const API = "https://api.github.com";
+const LANGUAGES = ["", "Python", "TypeScript", "JavaScript", "Rust", "Go", "Java", "C++", "C", "C#", "Swift",
+  "Kotlin", "Ruby", "PHP", "Dart", "Zig", "Shell", "Lua", "Elixir", "Haskell", "Scala", "Jupyter Notebook",
+  "HTML", "CSS", "Vue", "Svelte", "MDX", "Nix", "OCaml", "Julia", "R"];
+const LANG_COLORS = {
+  Python: "#3572A5", TypeScript: "#3178c6", JavaScript: "#f1e05a", Rust: "#dea584", Go: "#00ADD8", Java: "#b07219",
+  "C++": "#f34b7d", C: "#555555", "C#": "#178600", Swift: "#F05138", Kotlin: "#A97BFF", Ruby: "#701516",
+  PHP: "#4F5D95", Dart: "#00B4AB", Zig: "#ec915c", Shell: "#89e051", Lua: "#000080", Elixir: "#6e4a7e",
+  Haskell: "#5e5086", Scala: "#c22d40", "Jupyter Notebook": "#DA5B0B", HTML: "#e34c26", CSS: "#563d7c",
+  Vue: "#41b883", Svelte: "#ff3e00", MDX: "#fcb32c", Nix: "#7e7eff", OCaml: "#ef7a08", Julia: "#a270ba", R: "#198CE7"
+};
+const DAY_MS = 864e5;
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const MAX_SNAPSHOTS_PER_REPO = 40;
+const MAX_TRACKED_REPOS = 3000;
+const SERVER_MODES = ["movers", "trending"];
+const WINDOW_OPTIONS = {
+  search: [["1", "24 hours"], ["7", "7 days"], ["30", "30 days"], ["90", "90 days"], ["365", "1 year"]],
+  movers: [["24h", "24 hours"], ["7d", "7 days"], ["30d", "30 days"]],
+  trending: [["daily", "Today"], ["weekly", "This week"], ["monthly", "This month"]]
+};
+const PERIOD_DAYS = { daily: 1, weekly: 7, monthly: 30 };
+const PERIOD_LABEL = { daily: "today", weekly: "this week", monthly: "this month" };
+
+/* ---------- icons (Lucide-style, inline SVG) ---------- */
+const ICON_PATHS = {
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  fork: '<circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"/><path d="M12 12v3"/>',
+  bookmark: '<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
+  compare: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+  panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
+  external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  trending: '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  sparkles: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
+  activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  checks: '<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>'
+};
+
+function icon(name, extraClass = "") {
+  return `<svg class="i ${extraClass}" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[name] || ""}</svg>`;
+}
+const SOURCE_LABELS = {
+  "tracked": "Measured from RepoRadar's own snapshots",
+  "exact-new": "Repo was created inside this window, so all of its stars count",
+  "github-trending": "Taken from GitHub Trending's own star count for this period",
+  "projected": "Projected from a shorter tracked period (estimate)"
+};
+
+/* ---------- persistent storage ---------- */
+const store = {
+  get(key, fallback) {
+    try {
+      const raw = localStorage.getItem("rr:" + key);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem("rr:" + key, JSON.stringify(value));
+    } catch (error) {
+      console.warn("Storage full, pruning history", error);
+      pruneHistory(true);
+    }
+  }
+};
+
+let seen = new Set(store.get("seen", []));            // repo ids the user has seen
+let bookmarks = store.get("bookmarks", {});            // full_name -> last known repo object
+let history = store.get("history", {});                // id -> [[timestamp, stars], ...]
+let compareSet = new Set();
+
+function pruneHistory(aggressive) {
+  const entries = Object.entries(history);
+  const limit = aggressive ? Math.floor(MAX_TRACKED_REPOS / 2) : MAX_TRACKED_REPOS;
+  if (entries.length > limit) {
+    entries.sort((a, b) => b[1][b[1].length - 1][0] - a[1][a[1].length - 1][0]);
+    history = Object.fromEntries(entries.slice(0, limit));
+  }
+  localStorage.setItem("rr:history", JSON.stringify(history));
+}
+
+/* ---------- app state (mirrored to the URL hash so views are shareable) ---------- */
+const defaults = { mode: "rising", window: "7", mwin: "24h", since: "daily", day: "", lang: "", topic: "", minStars: "20", sort: "momentum", hideSeen: false, onlyNew: false };
+const state = { ...defaults, ...parseHash() };
+// Deep link: #repo=owner/name opens that repo's details once the list has loaded.
+let pendingRepo = new URLSearchParams(location.hash.slice(1)).get("repo");
+let repos = [];          // current enriched list
+let focusIndex = -1;
+let rateInfo = {};
+let serverMode = false;  // true when served by server.py (history + trending log available)
+let health = null;
+let trendingDay = null;
+
+/* ---------- data sources: local server (server.py) or static JSON on GitHub Pages ---------- */
+let dataMode = null;  // "server" | "static" | null
+
+async function detectServer() {
+  if (!location.protocol.startsWith("http")) return false;
+  const candidates = [["server", "/api/health"], ["static", "data/health.json?t=" + Date.now()]];
+  for (const [mode, url] of candidates) {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) continue;
+      const body = await response.json();
+      if (body.ok) {
+        health = body;
+        dataMode = mode;
+        return true;
+      }
+    } catch {
+      // try the next source
+    }
+  }
+  return false;
+}
+
+async function staticJson(file, cacheBust = health?.generated_at) {
+  const response = await fetch(`data/${file}?v=${cacheBust || Date.now()}`, { cache: "no-store" });
+  if (!response.ok) {
+    const error = new Error(response.status === 404 ? "Not tracked yet — it will be after the next collection." : response.statusText);
+    error.status = response.status;
+    error.fromServer = true;
+    throw error;
+  }
+  return response.json();
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    cache: "no-store",
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(body.error || response.statusText);
+    error.status = response.status;
+    error.fromServer = true;
+    throw error;
+  }
+  return body;
+}
+
+async function refreshHealth() {
+  const previousFinish = health?.collector?.last_finished;
+  try {
+    health = dataMode === "static" ? await staticJson("health.json", Date.now()) : await api("/api/health");
+  } catch {
+    return;
+  }
+  const finished = health.collector?.last_finished;
+  if (previousFinish && finished && finished !== previousFinish && SERVER_MODES.includes(state.mode)) {
+    toast("New data collected — press r to refresh");
+  }
+  renderStatus(visibleRepos());
+}
+
+function syncWatchToServer() {
+  if (dataMode !== "server") return;
+  for (const name of Object.keys(bookmarks)) {
+    api("/api/watch", { method: "POST", body: JSON.stringify({ full_name: name, on: true }) }).catch(() => {});
+  }
+}
+
+function languageSlug(language) {
+  return (language || "").toLowerCase().replace(/ /g, "-");
+}
+
+async function fetchMovers() {
+  if (dataMode === "static") {
+    const data = await staticJson(`movers-${state.mwin}.json`);
+    const minStars = Number(state.minStars) || 0;
+    return data.items
+      .filter((repo) => (!state.lang || repo.language === state.lang) && repo.stargazers_count >= minStars)
+      .slice(0, 300);
+  }
+  const params = new URLSearchParams({ window: state.mwin, min_stars: Number(state.minStars) || 0, limit: 300 });
+  if (state.lang) params.set("lang", state.lang);
+  const data = await api("/api/movers?" + params);
+  return data.items;
+}
+
+async function fetchTrendingLog() {
+  if (dataMode === "static") {
+    const meta = await staticJson("trending/days.json");
+    const day = state.day || meta.days[0] || null;
+    const data = day ? await staticJson(`trending/${day}.json`) : { lists: {} };
+    trendingDay = day;
+    $("#day").innerHTML = '<option value="">Latest</option>' +
+      meta.days.map((entry) => `<option value="${entry}">${entry}</option>`).join("");
+    $("#day").value = state.day;
+    return data.lists[`${state.since}|${languageSlug(state.lang)}`] || [];
+  }
+  const params = new URLSearchParams({ since: state.since, language: languageSlug(state.lang) });
+  if (state.day) params.set("day", state.day);
+  const [data, meta] = await Promise.all([api("/api/trending?" + params), api("/api/trending/days")]);
+  trendingDay = data.day;
+  $("#day").innerHTML = '<option value="">Latest</option>' +
+    meta.days.map((day) => `<option value="${day}">${day}</option>`).join("");
+  $("#day").value = state.day;
+  return data.items;
+}
+
+function windowGroup() {
+  return SERVER_MODES.includes(state.mode) ? state.mode : "search";
+}
+
+function windowKey() {
+  return { movers: "mwin", trending: "since" }[state.mode] || "window";
+}
+
+function parseHash() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const parsed = {};
+  for (const [key, value] of params) {
+    if (key in defaults) {
+      parsed[key] = typeof defaults[key] === "boolean" ? value === "1" : value;
+    }
+  }
+  return parsed;
+}
+
+function writeHash() {
+  const params = new URLSearchParams();
+  for (const key of Object.keys(defaults)) {
+    if (state[key] !== defaults[key]) {
+      params.set(key, typeof state[key] === "boolean" ? (state[key] ? "1" : "0") : state[key]);
+    }
+  }
+  history_replace("#" + params.toString());
+}
+
+function history_replace(hash) {
+  window.history.replaceState(null, "", hash.length > 1 ? hash : location.pathname);
+}
+
+/* ---------- helpers ---------- */
+const $ = (selector) => document.querySelector(selector);
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+function formatNumber(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1e4) return Math.round(n / 1e3) + "k";
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
+  return String(Math.round(n));
+}
+
+function formatAge(days) {
+  if (days === null || days === undefined || Number.isNaN(days)) return "?";
+  if (days < 1) return Math.max(1, Math.round(days * 24)) + "h";
+  if (days < 60) return Math.round(days) + "d";
+  if (days < 730) return Math.round(days / 30) + "mo";
+  return (days / 365).toFixed(1) + "y";
+}
+
+function isoDate(daysAgo) {
+  return new Date(Date.now() - daysAgo * DAY_MS).toISOString().slice(0, 10);
+}
+
+function toast(message) {
+  const el = $("#toast");
+  el.textContent = message;
+  el.style.display = "block";
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (el.style.display = "none"), 2600);
+}
+
+/* ---------- GitHub API with caching + rate-limit tracking ---------- */
+async function gh(path, { accept = "application/vnd.github+json", cache = true } = {}) {
+  const cacheKey = "rrc:" + accept + path;
+  if (cache) {
+    const hit = sessionStorage.getItem(cacheKey);
+    if (hit) {
+      const { t, body } = JSON.parse(hit);
+      if (Date.now() - t < CACHE_TTL_MS) return body;
+    }
+  }
+  const headers = { Accept: accept };
+  const token = store.get("token", "");
+  if (token) headers.Authorization = "Bearer " + token;
+
+  const response = await fetch(API + path, { headers });
+  const resource = response.headers.get("x-ratelimit-resource") || "core";
+  rateInfo[resource] = {
+    remaining: response.headers.get("x-ratelimit-remaining"),
+    limit: response.headers.get("x-ratelimit-limit"),
+    reset: Number(response.headers.get("x-ratelimit-reset")) * 1000
+  };
+  if (!response.ok) {
+    let detail = "";
+    try { detail = (await response.json()).message; } catch {}
+    const error = new Error(detail || response.statusText);
+    error.status = response.status;
+    error.reset = rateInfo[resource].reset;
+    throw error;
+  }
+  const body = accept.includes("html") ? await response.text() : await response.json();
+  if (cache) {
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), body }));
+    } catch {
+      sessionStorage.clear();
+    }
+  }
+  return body;
+}
+
+function buildQuery() {
+  const parts = [];
+  const days = Number(state.window);
+  const minStars = Math.max(0, Number(state.minStars) || 0);
+  if (state.mode === "rising") {
+    parts.push("created:>=" + isoDate(days));
+    parts.push("stars:>=" + minStars);
+  } else {
+    // Established: older than the window, but pushed to within it, and already popular.
+    parts.push("created:<" + isoDate(days));
+    parts.push("pushed:>=" + isoDate(Math.min(days, 7)));
+    parts.push("stars:>=" + Math.max(minStars, 500));
+  }
+  if (state.lang) parts.push('language:"' + state.lang + '"');
+  if (state.topic.trim()) {
+    for (const topic of state.topic.trim().split(/[\s,]+/)) {
+      parts.push("topic:" + topic.toLowerCase());
+    }
+  }
+  parts.push("archived:false");
+  return parts.join(" ");
+}
+
+async function fetchSearch() {
+  const query = encodeURIComponent(buildQuery());
+  const pages = state.mode === "rising" ? [1, 2] : [1];
+  const results = await Promise.all(pages.map((page) =>
+    gh(`/search/repositories?q=${query}&sort=stars&order=desc&per_page=100&page=${page}`)
+      .catch((error) => (page === 1 ? Promise.reject(error) : { items: [] }))
+  ));
+  const byId = new Map();
+  for (const result of results) {
+    for (const item of result.items || []) byId.set(item.id, item);
+  }
+  return [...byId.values()];
+}
+
+async function fetchWatchlist(forceRefresh) {
+  const names = Object.keys(bookmarks);
+  if (!forceRefresh) return names.map((name) => bookmarks[name]);
+  const fresh = await Promise.all(names.map((name) =>
+    gh("/repos/" + name, { cache: false }).catch(() => bookmarks[name])
+  ));
+  for (const repo of fresh) bookmarks[repo.full_name] = slimRepo(repo);
+  store.set("bookmarks", bookmarks);
+  return fresh;
+}
+
+function slimRepo(repo) {
+  const keep = ["id", "full_name", "name", "html_url", "description", "language", "stargazers_count", "forks_count",
+    "open_issues_count", "created_at", "pushed_at", "topics", "homepage", "license"];
+  const slim = Object.fromEntries(keep.map((key) => [key, repo[key]]));
+  slim.owner = { login: repo.owner?.login, avatar_url: repo.owner?.avatar_url };
+  return slim;
+}
+
+/* ---------- scoring ---------- */
+function recordSnapshot(repo) {
+  const series = history[repo.id] || [];
+  const now = Date.now();
+  const last = series[series.length - 1];
+  // Store at most one point per hour unless the star count changed.
+  if (!last || (now - last[0] > 3600e3) || last[1] !== repo.stargazers_count) {
+    series.push([now, repo.stargazers_count]);
+    if (series.length > MAX_SNAPSHOTS_PER_REPO) series.splice(0, series.length - MAX_SNAPSHOTS_PER_REPO);
+    history[repo.id] = series;
+  }
+}
+
+function enrich(repo) {
+  const now = Date.now();
+  const ageDays = repo.created_at ? Math.max((now - new Date(repo.created_at)) / DAY_MS, 0.25) : null;
+  const sincePushDays = repo.pushed_at ? Math.max((now - new Date(repo.pushed_at)) / DAY_MS, 0) : 0;
+  const stars = repo.stargazers_count;
+
+  // Delta since the user's previous visit (oldest snapshot taken before this session).
+  const series = history[repo.id] || [];
+  const prior = series.filter((point) => point[0] < sessionStart);
+  const baseline = prior.length ? prior[prior.length - 1] : null;
+  const delta = baseline ? stars - baseline[1] : null;
+  const deltaDays = baseline ? Math.max((now - baseline[0]) / DAY_MS, 1 / 24) : null;
+
+  const lifetimeVelocity = ageDays ? stars / ageDays : 0;
+  const observedVelocity = delta !== null && deltaDays > 0.04 ? delta / deltaDays : null;
+  // Established repos: prefer the observed rate; new repos: lifetime rate is accurate enough.
+  let velocity = state.mode === "rising" || observedVelocity === null ? lifetimeVelocity : observedVelocity;
+  // Server modes carry measured gains: use them for velocity and the Δ column.
+  let measuredDelta = null;
+  if (repo.gain !== undefined) {
+    velocity = repo.gain_per_day;
+    measuredDelta = repo.gain;
+  } else if (repo.period_stars !== undefined && repo.period_stars !== null) {
+    velocity = repo.period_stars / PERIOD_DAYS[state.since];
+    measuredDelta = repo.period_stars;
+  }
+
+  const freshness = sincePushDays <= 2 ? 1 : Math.exp(-(sincePushDays - 2) / 14);
+  const forkSignal = Math.min(repo.forks_count / Math.max(stars, 1), 0.5);
+  const raw = (0.7 * Math.log10(1 + Math.max(velocity, 0)) + 0.3 * Math.log10(1 + stars))
+            * (0.65 + 0.35 * freshness) * (1 + 0.3 * forkSignal);
+
+  return { ...repo, ageDays, sincePushDays, velocity, lifetimeVelocity, observedVelocity,
+           delta: measuredDelta ?? delta, visitDelta: delta, deltaDays, raw,
+           isNew: !seen.has(repo.id) && !(repo.id in history) };
+}
+
+function normalizeScores(list) {
+  const max = Math.max(...list.map((repo) => repo.raw), 1e-9);
+  for (const repo of list) repo.momentum = Math.round((repo.raw / max) * 100);
+}
+
+const sorters = {
+  momentum: (a, b) => b.raw - a.raw,
+  velocity: (a, b) => b.velocity - a.velocity,
+  delta: (a, b) => (b.delta ?? -1) - (a.delta ?? -1) || b.raw - a.raw,
+  rank: (a, b) => (a.trending_rank ?? 1e9) - (b.trending_rank ?? 1e9) || b.raw - a.raw,
+  stars: (a, b) => b.stargazers_count - a.stargazers_count,
+  forks: (a, b) => b.forks_count - a.forks_count,
+  newest: (a, b) => new Date(b.created_at) - new Date(a.created_at)
+};
+
+/* ---------- load + render ---------- */
+const sessionStart = Date.now();
+let loadToken = 0;
+
+async function load(forceRefresh = false) {
+  const myToken = ++loadToken;
+  writeHash();
+  syncControls();
+  $("#list").innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton"></div>').join("");
+  try {
+    let raw;
+    if (state.mode === "watch") {
+      raw = await fetchWatchlist(forceRefresh);
+    } else if (state.mode === "movers") {
+      raw = await fetchMovers();
+    } else if (state.mode === "trending") {
+      raw = await fetchTrendingLog();
+    } else {
+      if (forceRefresh) clearSearchCache();
+      raw = await fetchSearch();
+    }
+    if (myToken !== loadToken) return;
+    // Compute "new to me" before snapshots are written for this load.
+    const enriched = raw.filter(Boolean).map(enrich);
+    if (!SERVER_MODES.includes(state.mode)) {
+      for (const repo of raw.filter(Boolean)) recordSnapshot(repo);
+    }
+    pruneHistory(false);
+    store.set("history", history);
+    normalizeScores(enriched);
+    repos = enriched;
+    lastLoaded = new Date();
+    render();
+    if (pendingRepo) {
+      const target = repos.find((repo) => repo.full_name.toLowerCase() === pendingRepo.toLowerCase());
+      pendingRepo = null;
+      if (target) openDetails(target);
+    }
+  } catch (error) {
+    if (myToken !== loadToken) return;
+    let message = escapeHtml(error.message);
+    if (error.fromServer) {
+      message = "Local server error: " + message;
+    } else if (error.status === 403 || error.status === 429) {
+      const wait = error.reset ? Math.max(0, Math.ceil((error.reset - Date.now()) / 1000)) : 60;
+      message = `GitHub rate limit reached. Try again in ~${wait}s, or add a token (🔑) for higher limits.`;
+    } else if (error.status === 422) {
+      message = "GitHub rejected the query (check the topic / language filter).";
+    } else if (error instanceof TypeError) {
+      message = "Network error — are you online?";
+    }
+    $("#list").innerHTML = `<div class="error">${message}</div>`;
+    renderStatus([]);
+  }
+}
+let lastLoaded = null;
+
+function clearSearchCache() {
+  for (const key of Object.keys(sessionStorage)) {
+    if (key.startsWith("rrc:")) sessionStorage.removeItem(key);
+  }
+}
+
+function visibleRepos() {
+  const needle = $("#q").value.trim().toLowerCase();
+  let list = repos.filter((repo) => {
+    if (state.hideSeen && seen.has(repo.id)) return false;
+    if (state.onlyNew && !repo.isNew) return false;
+    if (SERVER_MODES.includes(state.mode) && state.topic.trim()) {
+      const wanted = state.topic.trim().toLowerCase().split(/[\s,]+/);
+      if (!wanted.every((topic) => (repo.topics || []).includes(topic))) return false;
+    }
+    if (!needle) return true;
+    const haystack = [repo.full_name, repo.description, (repo.topics || []).join(" "), repo.language].join(" ").toLowerCase();
+    return needle.split(/\s+/).every((word) => haystack.includes(word));
+  });
+  return list.sort(sorters[state.sort] || sorters.momentum);
+}
+
+function render() {
+  const list = visibleRepos();
+  focusIndex = Math.min(focusIndex, list.length - 1);
+  renderStatus(list);
+  renderInsights(list);
+  if (!list.length) {
+    const hints = {
+      watch: "Your watchlist is empty. Hover a repository and click the bookmark icon to track it here.",
+      movers: "No movers yet for this window. History builds up with every collection (every 30 min while the server runs) — try 24 hours, or press “Collect now”.",
+      trending: "No GitHub Trending data recorded for this day / language yet. Pick another day or language, or press “Collect now”."
+    };
+    const hint = hints[state.mode] || "Nothing matches. Try a wider window, a lower min ★, or turn off “Hide seen”.";
+    $("#list").innerHTML = `<div class="empty">${hint}</div>`;
+    return;
+  }
+  $("#list").innerHTML = list.map((repo, index) => cardHtml(repo, index)).join("");
+}
+
+function cardHtml(repo, index) {
+  const [owner, name] = repo.full_name.split("/");
+  const color = LANG_COLORS[repo.language] || "#a1a1aa";
+  // Movers / Trending are already ranked by heat, so a "Hot" tag would be redundant there.
+  const hot = repo.momentum >= 85 && (state.mode === "rising" || state.mode === "established");
+  const bookmarked = Boolean(bookmarks[repo.full_name]);
+  const isSeen = seen.has(repo.id);
+  const velocityLabel = SERVER_MODES.includes(state.mode)
+    ? "Stars per day over the measured period"
+    : state.mode === "rising" || repo.observedVelocity === null ? "Stars per day (lifetime)" : "Stars per day (observed)";
+  const showVisitDelta = repo.visitDelta > 0 && state.mode !== "established" && !SERVER_MODES.includes(state.mode);
+  const tags = [
+    hot ? `<span class="tag tag-hot" title="Momentum ${repo.momentum}/100">${icon("flame")}Hot</span>` : "",
+    repo.trending_streak >= 2
+      ? `<span class="tag tag-hot" title="Consecutive days on GitHub Trending">${repo.trending_streak}-day streak</span>` : "",
+    repo.trending_days >= 2 && state.mode !== "trending"
+      ? `<span class="tag" title="Days on GitHub Trending since RepoRadar started recording">${icon("trending")}Trending ${repo.trending_days}d</span>` : "",
+    showVisitDelta
+      ? `<span class="tag tag-up" title="Stars gained since your visit ${formatAge(repo.deltaDays)} ago">+${formatNumber(repo.visitDelta)} since last visit</span>` : ""
+  ].join("");
+  const license = repo.license?.spdx_id && repo.license.spdx_id !== "NOASSERTION" ? repo.license.spdx_id : "";
+  const topics = (repo.topics || []).slice(0, 3)
+    .map((topic) => `<span class="chip" data-topic="${escapeHtml(topic)}">${escapeHtml(topic)}</span>`)
+    .join("");
+  const metric = primaryMetric(repo);
+  return `
+  <article class="card ${isSeen ? "seen" : ""} ${index === focusIndex ? "focused" : ""}" data-id="${repo.id}" data-index="${index}">
+    <div class="rank">${index + 1}</div>
+    <img class="avatar" src="${escapeHtml(repo.owner?.avatar_url)}&s=80" alt="" loading="lazy">
+    <div class="body">
+      <div class="title">
+        ${repo.isNew ? '<i class="new-dot" title="New to you"></i>' : ""}<a class="name" href="${escapeHtml(repo.html_url)}" target="_blank" rel="noopener" data-act="open"><span class="owner">${escapeHtml(owner)} / </span>${escapeHtml(name)}</a>
+        ${tags}
+        <div class="actions">
+          <button class="icon-btn ${bookmarked ? "on" : ""}" data-act="bookmark" title="${bookmarked ? "Remove from watchlist" : "Add to watchlist"} (b)">${icon("bookmark")}</button>
+          <button class="icon-btn" data-act="seen" title="${isSeen ? "Mark as unseen" : "Mark as seen"} (s)">${icon(isSeen ? "eyeOff" : "eye")}</button>
+          <button class="icon-btn ${compareSet.has(repo.id) ? "on" : ""}" data-act="compare" title="Compare (c)">${icon("compare")}</button>
+          <button class="icon-btn" data-act="details" title="Details &amp; README (Enter)">${icon("panel")}</button>
+        </div>
+      </div>
+      <p class="desc ${repo.description ? "" : "none"}" title="${escapeHtml(repo.description || "")}">${escapeHtml(repo.description || "No description provided")}</p>
+      <div class="meta">
+        ${repo.language ? `<span><i class="lang-dot" style="background:${color}"></i>${escapeHtml(repo.language)}</span>` : ""}
+        <span title="Total stars">${icon("star")}${formatNumber(repo.stargazers_count)}</span>
+        <span title="Forks">${icon("fork")}${formatNumber(repo.forks_count)}</span>
+        <span title="${velocityLabel}">${icon("zap")}${formatNumber(repo.velocity)}/day</span>
+        <span title="Last push">${icon("clock")}Updated ${formatAge(repo.sincePushDays)} ago</span>
+        ${repo.ageDays !== null ? `<span title="Repository age">Created ${formatAge(repo.ageDays)} ago</span>` : ""}
+        ${license ? `<span>${escapeHtml(license)}</span>` : ""}
+        ${sparkline(history[repo.id])}
+        ${topics ? `<span class="topics">${topics}</span>` : ""}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-value ${metric.tone}" title="${escapeHtml(metric.title)}">${metric.value}</div>
+      <div class="metric-label">${metric.label}</div>
+      ${metric.src ? `<div class="metric-src" title="${escapeHtml(metric.title)}">${metric.src}</div>` : ""}
+      <div class="momentum" title="Momentum score ${repo.momentum}/100"><span class="meter"><i style="width:${repo.momentum}%"></i></span>${repo.momentum}</div>
+    </div>
+  </article>`;
+}
+
+function primaryMetric(repo) {
+  if (repo.gain !== undefined) {
+    const sources = { tracked: "tracked", "exact-new": "new repo", "github-trending": "via GitHub Trending", projected: "estimate" };
+    return {
+      value: signed(repo.gain),
+      label: `stars · ${state.mwin}`,
+      src: sources[repo.gain_source] || "",
+      tone: repo.gain > 0 ? "up" : "",
+      title: SOURCE_LABELS[repo.gain_source] || ""
+    };
+  }
+  if (repo.period_stars !== undefined) {
+    return {
+      value: repo.period_stars !== null ? signed(repo.period_stars) : "—",
+      label: `stars ${PERIOD_LABEL[state.since]}`,
+      src: `#${repo.trending_rank} on Trending`,
+      tone: repo.period_stars > 0 ? "up" : "",
+      title: `Rank #${repo.trending_rank} on GitHub Trending`
+    };
+  }
+  if (state.mode === "established" && repo.visitDelta > 0) {
+    return {
+      value: signed(repo.visitDelta),
+      label: "stars since last visit",
+      src: "",
+      tone: "up",
+      title: `Since your visit ${formatAge(repo.deltaDays)} ago`
+    };
+  }
+  return { value: formatNumber(repo.velocity), label: "stars / day", src: "", tone: "", title: "Average stars per day" };
+}
+
+function sparkline(series) {
+  if (SERVER_MODES.includes(state.mode)) return "";
+  if (!series || series.length < 2) return "";
+  const width = 70;
+  const height = 18;
+  const values = series.map((point) => point[1]);
+  const times = series.map((point) => point[0]);
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const minT = times[0];
+  const spanT = Math.max(times[times.length - 1] - minT, 1);
+  const points = series.map(([t, v]) =>
+    `${((t - minT) / spanT * width).toFixed(1)},${(height - ((v - minV) / Math.max(maxV - minV, 1)) * height).toFixed(1)}`
+  ).join(" ");
+  return `<svg width="${width}" height="${height}" title="Your star history" style="vertical-align:middle"><polyline fill="none" stroke="var(--good)" stroke-width="1.6" points="${points}"/></svg>`;
+}
+
+function signed(n) {
+  return (n >= 0 ? "+" : "−") + formatNumber(Math.abs(n));
+}
+
+function renderStatus(list) {
+  const search = rateInfo.search;
+  const core = rateInfo.core;
+  const windowLabel = ($("#window").selectedOptions[0]?.textContent || "").toLowerCase();
+  const headings = {
+    movers: ["Movers", `Repositories gaining the most stars in the last ${windowLabel}`],
+    rising: ["Rising", `New repositories created in the last ${windowLabel}, ranked by momentum`],
+    established: ["Established", `Popular repositories with activity in the last ${windowLabel}`],
+    trending: ["Trending", `GitHub Trending archive · ${windowLabel} · ${trendingDay || "no data yet"}`],
+    watch: ["Watchlist", "Repositories you are keeping an eye on"]
+  };
+  const [title, subtitle] = headings[state.mode];
+  const timeOf = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const pills = [];
+  if (serverMode && health) {
+    const collector = health.collector || {};
+    const since = health.history_since ? new Date(health.history_since * 1000).toLocaleString() : "—";
+    if (collector.running) {
+      pills.push('<span class="pill"><i class="dot busy"></i>Collecting…</span>');
+    } else if (collector.last_finished) {
+      pills.push(`<span class="pill" title="Last collection"><i class="dot live"></i>Live · ${timeOf(collector.last_finished * 1000)}</span>`);
+    }
+    pills.push(`<span class="pill" title="History since ${since} · ${formatNumber(health.counts.snapshots)} snapshots">${icon("database")}<b>${formatNumber(health.counts.repos)}</b> tracked</span>`);
+    if (collector.enabled) {
+      pills.push(`<button class="pill" data-act="collect" ${collector.running ? "disabled" : ""}>${icon("refresh")}Collect now</button>`);
+    }
+  } else {
+    if (lastLoaded) pills.push(`<span class="pill"><i class="dot live"></i>Updated ${timeOf(lastLoaded)}</span>`);
+    pills.push(`<span class="pill" title="Repositories with local star history in this browser"><b>${Object.keys(history).length}</b> tracked locally</span>`);
+  }
+  if (search) pills.push(`<span class="pill" title="GitHub search API quota">Search <b>${search.remaining}/${search.limit}</b></span>`);
+  if (core) pills.push(`<span class="pill" title="GitHub core API quota">API <b>${core.remaining}/${core.limit}</b></span>`);
+  const count = list.length === repos.length ? `${list.length}` : `${list.length} of ${repos.length}`;
+  $("#status").innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>${title}<span class="count">${count}</span></h1>
+        <p>${escapeHtml(subtitle)}</p>
+      </div>
+      <div class="page-meta">${pills.join("")}</div>
+    </div>`;
+}
+
+function renderInsights(list) {
+  const totalStars = list.reduce((sum, repo) => sum + repo.stargazers_count, 0);
+  const fastest = list.reduce((best, repo) => (!best || repo.velocity > best.velocity ? repo : best), null);
+  const newCount = list.filter((repo) => repo.isNew).length;
+  const medianVelocity = (() => {
+    const sorted = list.map((repo) => repo.velocity).sort((a, b) => a - b);
+    return sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+  })();
+  $("#kpis").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="v">${list.length}</div><div class="k">Repositories</div></div>
+      <div class="kpi"><div class="v">${newCount}</div><div class="k">New to you</div></div>
+      <div class="kpi"><div class="v">${formatNumber(totalStars)}</div><div class="k">Total stars</div></div>
+      <div class="kpi"><div class="v">${formatNumber(medianVelocity)}</div><div class="k">Median stars / day</div></div>
+    </div>
+    ${fastest ? `
+    <div class="riser">
+      <img src="${escapeHtml(fastest.owner?.avatar_url)}&s=64" alt="">
+      <div style="min-width:0"><div class="k">Fastest riser</div><div class="n">${escapeHtml(fastest.full_name)}</div></div>
+      <div class="r">${formatNumber(fastest.velocity)}<span>stars / day</span></div>
+    </div>` : ""}`;
+
+  const languageCounts = {};
+  for (const repo of list) {
+    const key = repo.language || "Other";
+    languageCounts[key] = (languageCounts[key] || 0) + 1;
+  }
+  const languageRows = Object.entries(languageCounts)
+    .sort((a, b) => (a[0] === "Other") - (b[0] === "Other") || b[1] - a[1])
+    .slice(0, 8);
+  const maxCount = Math.max(...languageRows.map((row) => row[1]), 1);
+  $("#langChart").innerHTML = languageRows.map(([lang, count]) => `
+    <div class="hbar" data-lang="${escapeHtml(lang)}" title="Filter by ${escapeHtml(lang)}"><span>${escapeHtml(lang)}</span>
+      <div class="track"><i style="width:${(count / maxCount) * 100}%;background:${LANG_COLORS[lang] || "#a1a1aa"}"></i></div>
+      <span>${count}</span></div>`).join("") || '<span class="muted">—</span>';
+
+  const topicCounts = {};
+  for (const repo of list) {
+    for (const topic of repo.topics || []) topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+  }
+  $("#topicCloud").innerHTML = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]).slice(0, 20)
+    .map(([topic, count]) => `<span class="chip" data-topic="${escapeHtml(topic)}">${escapeHtml(topic)}<b>${count}</b></span>`).join("")
+    || '<span class="muted">—</span>';
+  renderCompareTray();
+}
+
+/* ---------- details drawer ---------- */
+async function openDetails(repo) {
+  markSeen(repo, true);
+  $("#drawer").classList.add("open");
+  $("#drawerBg").classList.add("open");
+  const [ownerName, repoName] = repo.full_name.split("/");
+  $("#dhead").innerHTML = `
+    <img class="avatar" src="${escapeHtml(repo.owner?.avatar_url)}&s=80" alt="">
+    <div style="flex:1;min-width:0">
+      <div class="name"><span class="owner">${escapeHtml(ownerName)} / </span>${escapeHtml(repoName)}</div>
+      <div class="muted" style="font-size:13px">${escapeHtml(repo.description || "")}</div>
+    </div>
+    <a class="btn small primary" href="${escapeHtml(repo.html_url)}" target="_blank" rel="noopener">${icon("external")}GitHub</a>
+    ${repo.homepage ? `<a class="btn small" href="${escapeHtml(repo.homepage)}" target="_blank" rel="noopener">${icon("globe")}Website</a>` : ""}
+    <button class="ghost-icon" id="closeDrawer" aria-label="Close">${icon("x")}</button>`;
+  const series = history[repo.id] || [];
+  $("#dbody").innerHTML = `
+    <div class="stats-grid">
+      <div class="kpi"><div class="v">${formatNumber(repo.stargazers_count)}</div><div class="k">stars</div></div>
+      <div class="kpi"><div class="v">${formatNumber(repo.lifetimeVelocity)}</div><div class="k">★/day lifetime</div></div>
+      <div class="kpi"><div class="v">${repo.observedVelocity !== null ? formatNumber(repo.observedVelocity) : "—"}</div><div class="k">★/day observed</div></div>
+      <div class="kpi"><div class="v">${repo.momentum ?? "—"}</div><div class="k">momentum</div></div>
+      <div class="kpi"><div class="v">${formatNumber(repo.forks_count)}</div><div class="k">forks</div></div>
+      <div class="kpi"><div class="v">${formatNumber(repo.open_issues_count)}</div><div class="k">open issues + PRs</div></div>
+      <div class="kpi"><div class="v">${formatAge(repo.ageDays)}</div><div class="k">age</div></div>
+      ${serverMode
+        ? `<div class="kpi"><div class="v">${repo.trending_days ?? 0}</div><div class="k">days on Trending</div></div>`
+        : `<div class="kpi"><div class="v">${series.length}</div><div class="k">your snapshots</div></div>`}
+    </div>
+    ${serverMode ? '<div id="historyBox" class="chart muted">Loading star history…</div>' : ""}
+    <div id="langBreakdown" class="muted" style="margin-bottom:14px">Loading language breakdown…</div>
+    <div id="readme" class="muted">Loading README…</div>`;
+  $("#closeDrawer").onclick = closeDetails;
+
+  const [owner, name] = repo.full_name.split("/");
+  if (serverMode) loadServerHistory(repo);
+  gh(`/repos/${owner}/${name}/languages`).then((languages) => {
+    const total = Object.values(languages).reduce((a, b) => a + b, 0) || 1;
+    const entries = Object.entries(languages).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    $("#langBreakdown").innerHTML = `
+      <div style="display:flex;height:8px;border-radius:99px;overflow:hidden;margin-bottom:6px">
+        ${entries.map(([lang, bytes]) => `<i style="width:${(bytes / total) * 100}%;background:${LANG_COLORS[lang] || "#8b93a7"}"></i>`).join("")}
+      </div>
+      ${entries.map(([lang, bytes]) => `<span style="margin-right:12px;font-size:12px"><i class="lang-dot" style="background:${LANG_COLORS[lang] || "#8b93a7"}"></i>${escapeHtml(lang)} ${((bytes / total) * 100).toFixed(1)}%</span>`).join("")}`;
+  }).catch(() => ($("#langBreakdown").textContent = ""));
+
+  try {
+    const html = await gh(`/repos/${owner}/${name}/readme`, { accept: "application/vnd.github.html" });
+    const frame = document.createElement("iframe");
+    frame.setAttribute("sandbox", "allow-popups allow-popups-to-escape-sandbox");
+    frame.srcdoc = `<base href="${escapeHtml(repo.html_url)}/blob/HEAD/" target="_blank">
+      <style>body{font:14px/1.6 system-ui,sans-serif;padding:16px 22px;color:#1f2328;max-width:100%}img{max-width:100%}pre{background:#f6f8fa;padding:12px;border-radius:8px;overflow:auto}code{font-family:ui-monospace,monospace}table{border-collapse:collapse}td,th{border:1px solid #d0d7de;padding:4px 8px}a{color:#0969da}</style>${html}`;
+    $("#readme").replaceChildren(frame);
+  } catch {
+    $("#readme").textContent = "README unavailable (none, or rate limit reached).";
+  }
+}
+
+function closeDetails() {
+  $("#drawer").classList.remove("open");
+  $("#drawerBg").classList.remove("open");
+}
+
+async function loadServerHistory(repo) {
+  const box = $("#historyBox");
+  const exactButton = `<button class="btn small" id="exactGains" title="Counts stargazer timestamps (needs a GitHub token)">Exact stars in last 24h / 7d</button>`;
+  if (typeof repo.id !== "number") {
+    box.innerHTML = `Not tracked yet — it will be after the next collection. ${exactButton}`;
+  } else {
+    try {
+      const data = dataMode === "static" ? await staticJson(`history/${repo.id}.json`) : await api(`/api/repo/${repo.id}/history`);
+      const appearances = data.trending.slice(0, 30).map((entry) =>
+        `<span class="chip">${entry.day} · ${entry.since} · ${escapeHtml(entry.language || "all")} #${entry.rank}${entry.period_stars ? " · +" + formatNumber(entry.period_stars) : ""}</span>`
+      ).join("");
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="color:var(--text)">Star history (RepoRadar snapshots)</b>${exactButton}
+        </div>
+        ${historyChart(data.points)}
+        <div id="exactResult" style="margin:6px 0"></div>
+        ${appearances ? `<div style="margin-top:8px"><b style="color:var(--text)">GitHub Trending appearances</b><div class="topics">${appearances}</div></div>` : '<div style="margin-top:6px">Not seen on GitHub Trending since recording started.</div>'}`;
+    } catch (error) {
+      box.innerHTML = `${escapeHtml(error.message)} ${exactButton}`;
+    }
+  }
+  const button = $("#exactGains");
+  if (button) {
+    button.onclick = async () => {
+      button.disabled = true;
+      button.textContent = "Counting stargazers…";
+      const target = $("#exactResult") || box;
+      try {
+        const result = dataMode === "static" ? await exactGainsInBrowser(repo) : await api(`/api/stargains/${repo.full_name}`);
+        target.innerHTML = `<span class="badge delta">+${formatNumber(result.gained_24h)} ★ last 24h</span>
+          <span class="badge delta">${result.complete_7d ? "" : "≥ "}+${formatNumber(result.gained_7d)} ★ last 7 days</span>
+          <span class="muted" style="font-size:12px">exact, from stargazer timestamps</span>`;
+        button.remove();
+      } catch (error) {
+        target.insertAdjacentHTML("beforeend", `<div class="muted">${escapeHtml(error.message)}</div>`);
+        button.disabled = false;
+        button.textContent = "Retry exact gains";
+      }
+    };
+  }
+}
+
+// Static hosting has no server, so count stargazer timestamps directly with the visitor's own token.
+async function exactGainsInBrowser(repo) {
+  if (!store.get("token", "")) {
+    throw new Error("Add a GitHub token (key icon, top right) to see exact star gains.");
+  }
+  const now = Date.now();
+  const dayCut = now - DAY_MS;
+  const weekCut = now - 7 * DAY_MS;
+  const lastPage = Math.max(1, Math.ceil(repo.stargazers_count / 100));
+  let gained24h = 0;
+  let gained7d = 0;
+  let complete = lastPage <= 10;
+  for (let page = lastPage; page > Math.max(lastPage - 10, 0); page--) {
+    const stargazers = await gh(`/repos/${repo.full_name}/stargazers?per_page=100&page=${page}`,
+      { accept: "application/vnd.github.star+json", cache: false });
+    for (const entry of stargazers) {
+      const starredAt = Date.parse(entry.starred_at);
+      if (starredAt >= weekCut) gained7d++;
+      if (starredAt >= dayCut) gained24h++;
+    }
+    if (!stargazers.length || Date.parse(stargazers[0].starred_at) < weekCut) {
+      complete = true;
+      break;
+    }
+  }
+  return { gained_24h: gained24h, gained_7d: gained7d, complete_7d: complete };
+}
+
+function axisLabel(value, other) {
+  // Use exact numbers when compact formatting would make both ends look identical.
+  return formatNumber(value) === formatNumber(other) ? value.toLocaleString() : formatNumber(value);
+}
+
+function historyChart(points) {
+  if (!points || points.length < 2) {
+    return '<div class="muted" style="padding:18px 0">Only one snapshot so far — the chart fills in with every collection (every 30 min while the server runs).</div>';
+  }
+  const width = 700;
+  const height = 170;
+  const pad = { left: 52, right: 10, top: 10, bottom: 22 };
+  const times = points.map((p) => p[0]);
+  const stars = points.map((p) => p[1]);
+  const minT = Math.min(...times);
+  const maxT = Math.max(...times);
+  const minS = Math.min(...stars);
+  const maxS = Math.max(...stars);
+  const x = (t) => pad.left + ((t - minT) / Math.max(maxT - minT, 1)) * (width - pad.left - pad.right);
+  const y = (s) => pad.top + (1 - (s - minS) / Math.max(maxS - minS, 1)) * (height - pad.top - pad.bottom);
+  const line = points.map((p) => `${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const area = `${pad.left},${height - pad.bottom} ${line} ${x(maxT).toFixed(1)},${height - pad.bottom}`;
+  const label = (t) => new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const gained = stars[stars.length - 1] - stars[0];
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Star history">
+      <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient></defs>
+      <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}" stroke="var(--border)"/>
+      <polygon points="${area}" fill="url(#g)"/>
+      <polyline points="${line}" fill="none" stroke="var(--accent2)" stroke-width="2"/>
+      ${points.map((p) => `<circle cx="${x(p[0]).toFixed(1)}" cy="${y(p[1]).toFixed(1)}" r="2.2" fill="var(--accent2)"><title>${label(p[0])}: ${p[1].toLocaleString()} ★</title></circle>`).join("")}
+      <text x="${pad.left - 6}" y="${pad.top + 8}" text-anchor="end">${axisLabel(maxS, minS)}</text>
+      <text x="${pad.left - 6}" y="${height - pad.bottom}" text-anchor="end">${axisLabel(minS, maxS)}</text>
+      <text x="${pad.left}" y="${height - 6}">${label(minT)}</text>
+      <text x="${width - pad.right}" y="${height - 6}" text-anchor="end">${label(maxT)}</text>
+    </svg>
+    <div class="muted" style="font-size:12px">${signed(gained)} ★ over ${formatAge((maxT - minT) / DAY_MS)} · ${points.length} snapshots</div>`;
+}
+
+/* ---------- compare ---------- */
+function renderCompareTray() {
+  const tray = $("#compareTray");
+  if (!compareSet.size) {
+    tray.style.display = "none";
+    return;
+  }
+  const names = repos.filter((repo) => compareSet.has(repo.id)).map((repo) => repo.full_name.split("/")[1]);
+  tray.style.display = "flex";
+  tray.innerHTML = `<span>⇄ ${names.map(escapeHtml).join(" · ")}</span>
+    <button class="btn small primary" id="doCompare" ${compareSet.size < 2 ? "disabled" : ""}>Compare ${compareSet.size}</button>
+    <button class="btn small" id="clearCompare">Clear</button>`;
+  $("#doCompare").onclick = showCompare;
+  $("#clearCompare").onclick = () => {
+    compareSet.clear();
+    render();
+  };
+}
+
+function showCompare() {
+  const chosen = repos.filter((repo) => compareSet.has(repo.id));
+  const rows = [
+    ["Stars", (r) => r.stargazers_count, formatNumber],
+    ["★/day (lifetime)", (r) => r.lifetimeVelocity, formatNumber],
+    ["Momentum", (r) => r.momentum, String],
+    ["Forks", (r) => r.forks_count, formatNumber],
+    ["Fork ratio", (r) => r.forks_count / Math.max(r.stargazers_count, 1), (v) => (v * 100).toFixed(1) + "%"],
+    ["Open issues + PRs", (r) => -r.open_issues_count, (v) => formatNumber(-v)],
+    ["Days since push", (r) => -r.sincePushDays, (v) => formatAge(-v)],
+    ["Age", (r) => r.ageDays, formatAge]
+  ];
+  const table = `<table class="cmp"><tr><th></th>${chosen.map((r) => `<th>${escapeHtml(r.full_name)}</th>`).join("")}</tr>
+    ${rows.map(([label, getter, format]) => {
+      const values = chosen.map(getter);
+      const best = label === "Age" ? null : Math.max(...values);
+      return `<tr><td>${label}</td>${values.map((v) => `<td class="${v === best ? "best" : ""}">${format(v)}</td>`).join("")}</tr>`;
+    }).join("")}</table>`;
+  $("#drawer").classList.add("open");
+  $("#drawerBg").classList.add("open");
+  $("#dhead").innerHTML = `<div class="name" style="flex:1">Compare ${chosen.length} repositories</div><button class="btn" id="closeDrawer">✕</button>`;
+  $("#dbody").innerHTML = table + '<p class="muted" style="font-size:12px">Green = best in row (fewer open issues and more recent pushes count as better).</p>';
+  $("#closeDrawer").onclick = closeDetails;
+}
+
+/* ---------- actions ---------- */
+function markSeen(repo, value) {
+  if (value) seen.add(repo.id);
+  else seen.delete(repo.id);
+  store.set("seen", [...seen].slice(-20000));
+}
+
+function toggleBookmark(repo) {
+  const turningOff = Boolean(bookmarks[repo.full_name]);
+  if (turningOff) {
+    delete bookmarks[repo.full_name];
+    toast("Removed from watchlist");
+  } else {
+    bookmarks[repo.full_name] = slimRepo(repo);
+    toast("Added to watchlist");
+  }
+  store.set("bookmarks", bookmarks);
+  if (dataMode === "server") {
+    api("/api/watch", { method: "POST", body: JSON.stringify({ full_name: repo.full_name, on: !turningOff }) }).catch(() => {});
+  }
+}
+
+function toggleCompare(repo) {
+  if (compareSet.has(repo.id)) {
+    compareSet.delete(repo.id);
+  } else if (compareSet.size >= 4) {
+    toast("Compare up to 4 repos");
+    return;
+  } else {
+    compareSet.add(repo.id);
+  }
+}
+
+function exportCsv() {
+  const list = visibleRepos();
+  const columns = ["rank", "full_name", "html_url", "language", "stars", "stars_per_day", "delta_since_last_visit", "momentum", "forks", "open_issues", "created_at", "pushed_at", "topics", "description"];
+  const quote = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const lines = [columns.join(",")].concat(list.map((r, i) => [
+    i + 1, r.full_name, r.html_url, r.language, r.stargazers_count, r.velocity.toFixed(1), r.delta ?? "", r.momentum,
+    r.forks_count, r.open_issues_count, r.created_at, r.pushed_at, (r.topics || []).join(" "), r.description
+  ].map(quote).join(",")));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `reporadar-${state.mode}-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function repoForElement(element) {
+  const card = element.closest(".card");
+  return card ? repos.find((repo) => String(repo.id) === card.dataset.id) : null;
+}
+
+function focusCard(index) {
+  const cards = document.querySelectorAll(".card");
+  if (!cards.length) return;
+  focusIndex = Math.max(0, Math.min(index, cards.length - 1));
+  cards.forEach((card, i) => card.classList.toggle("focused", i === focusIndex));
+  cards[focusIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function focusedRepo() {
+  const card = document.querySelectorAll(".card")[focusIndex];
+  return card ? repos.find((repo) => String(repo.id) === card.dataset.id) : null;
+}
+
+/* ---------- wiring ---------- */
+function syncControls() {
+  document.querySelectorAll("#modeTabs button").forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
+  const options = WINDOW_OPTIONS[windowGroup()];
+  $("#window").innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+  $("#window").value = state[windowKey()];
+  if (!$("#window").value) $("#window").value = options[0][0];
+  $("#dayField").style.display = state.mode === "trending" ? "" : "none";
+  // Min stars does not apply to the Trending archive, so hide it there to keep the filter bar on one row.
+  $("#minStars").closest(".field").style.display = state.mode === "trending" ? "none" : "";
+  $("#lang").value = state.lang;
+  $("#topic").value = state.topic;
+  $("#minStars").value = state.minStars;
+  $("#sort").value = state.sort;
+  $("#hideSeen").checked = state.hideSeen;
+  $("#onlyNew").checked = state.onlyNew;
+  const disabled = state.mode === "watch";
+  for (const id of ["#window", "#lang", "#topic", "#minStars"]) $(id).disabled = disabled;
+}
+
+function init() {
+  $("#lang").innerHTML = LANGUAGES.map((lang) => `<option value="${escapeHtml(lang)}">${lang || "All languages"}</option>`).join("");
+  if (state.lang && !LANGUAGES.includes(state.lang)) {
+    $("#lang").insertAdjacentHTML("beforeend", `<option value="${escapeHtml(state.lang)}">${escapeHtml(state.lang)}</option>`);
+  }
+  for (const placeholder of document.querySelectorAll("[data-icon]")) {
+    placeholder.outerHTML = icon(placeholder.dataset.icon, placeholder.dataset.class || "");
+  }
+  document.documentElement.dataset.theme = store.get(
+    "theme",
+    matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  );
+
+  $("#modeTabs").addEventListener("click", (event) => {
+    const mode = event.target.closest("button")?.dataset.mode;
+    if (!mode) return;
+    state.mode = mode;
+    if (mode === "established" && state.sort === "velocity") state.sort = "delta";
+    if (mode === "movers") state.sort = "delta";
+    if (mode === "trending") state.sort = "rank";
+    if ((mode === "rising" || mode === "established") && state.sort === "rank") state.sort = "momentum";
+    load(mode === "watch");
+  });
+  $("#window").addEventListener("change", (event) => {
+    state[windowKey()] = event.target.value;
+    load();
+  });
+  $("#day").addEventListener("change", (event) => {
+    state.day = event.target.value;
+    load();
+  });
+  $("#status").addEventListener("click", async (event) => {
+    if (event.target.closest('[data-act="collect"]')) {
+      const result = await api("/api/collect", { method: "POST", body: "{}" }).catch(() => null);
+      toast(result?.started ? "Collection started — takes ~1–2 min" : "A collection is already running");
+      setTimeout(refreshHealth, 1500);
+    }
+  });
+  const reloadOn = { lang: "lang", minStars: "minStars" };
+  for (const [id, key] of Object.entries(reloadOn)) {
+    $("#" + id).addEventListener("change", (event) => {
+      state[key] = event.target.value;
+      load();
+    });
+  }
+  $("#topic").addEventListener("change", (event) => {
+    state.topic = event.target.value;
+    load();
+  });
+  $("#sort").addEventListener("change", (event) => {
+    state.sort = event.target.value;
+    writeHash();
+    render();
+  });
+  $("#hideSeen").addEventListener("change", (event) => {
+    state.hideSeen = event.target.checked;
+    writeHash();
+    render();
+  });
+  $("#onlyNew").addEventListener("change", (event) => {
+    state.onlyNew = event.target.checked;
+    writeHash();
+    render();
+  });
+  $("#q").addEventListener("input", render);
+  $("#refreshBtn").onclick = () => load(true);
+  $("#exportBtn").onclick = exportCsv;
+  $("#markAllSeen").onclick = () => {
+    for (const repo of visibleRepos()) seen.add(repo.id);
+    store.set("seen", [...seen]);
+    render();
+    toast("Marked all as seen");
+  };
+  $("#themeBtn").onclick = () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    store.set("theme", next);
+  };
+  $("#tokenBtn").onclick = () => {
+    $("#tokenInput").value = store.get("token", "");
+    $("#tokenModal").classList.add("open");
+  };
+  $("#tokenCancel").onclick = () => $("#tokenModal").classList.remove("open");
+  $("#tokenClear").onclick = () => {
+    store.set("token", "");
+    if (dataMode === "server") api("/api/token", { method: "POST", body: JSON.stringify({ token: "" }) }).catch(() => {});
+    $("#tokenModal").classList.remove("open");
+    toast("Token removed");
+  };
+  $("#tokenSave").onclick = () => {
+    store.set("token", $("#tokenInput").value.trim());
+    if (dataMode === "server") {
+      api("/api/token", { method: "POST", body: JSON.stringify({ token: $("#tokenInput").value.trim() }) }).catch(() => {});
+    }
+    $("#tokenModal").classList.remove("open");
+    toast("Token saved");
+    load(true);
+  };
+  $("#drawerBg").onclick = closeDetails;
+
+  $("#list").addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-topic]");
+    if (chip) {
+      state.topic = chip.dataset.topic;
+      load();
+      return;
+    }
+    const repo = repoForElement(event.target);
+    if (!repo) return;
+    const action = event.target.closest("[data-act]")?.dataset.act;
+    if (action === "bookmark") toggleBookmark(repo);
+    else if (action === "seen") markSeen(repo, !seen.has(repo.id));
+    else if (action === "compare") toggleCompare(repo);
+    else if (action === "details") return openDetails(repo);
+    else if (action === "open") markSeen(repo, true);
+    else return;
+    render();
+  });
+  document.querySelector("aside").addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-topic]");
+    const bar = event.target.closest("[data-lang]");
+    if (chip && state.mode !== "watch") {
+      state.topic = chip.dataset.topic;
+      load();
+    } else if (bar && bar.dataset.lang !== "Other" && state.mode !== "watch") {
+      if (!LANGUAGES.includes(bar.dataset.lang) && !$(`#lang option[value="${CSS.escape(bar.dataset.lang)}"]`)) {
+        $("#lang").insertAdjacentHTML("beforeend", `<option value="${escapeHtml(bar.dataset.lang)}">${escapeHtml(bar.dataset.lang)}</option>`);
+      }
+      state.lang = bar.dataset.lang;
+      load();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
+    if (event.key === "Escape") {
+      closeDetails();
+      $("#tokenModal").classList.remove("open");
+      document.activeElement.blur();
+      return;
+    }
+    if (typing || event.ctrlKey || event.metaKey || event.altKey) return;
+    const repo = focusedRepo();
+    const handlers = {
+      "/": () => $("#q").focus(),
+      j: () => focusCard(focusIndex + 1),
+      k: () => focusCard(focusIndex - 1),
+      o: () => repo && (markSeen(repo, true), window.open(repo.html_url, "_blank")),
+      Enter: () => repo && openDetails(repo),
+      b: () => repo && (toggleBookmark(repo), render()),
+      s: () => repo && (markSeen(repo, !seen.has(repo.id)), render()),
+      c: () => repo && (toggleCompare(repo), render()),
+      r: () => load(true),
+      1: () => $('#modeTabs [data-mode="rising"]').click(),
+      2: () => $('#modeTabs [data-mode="established"]').click(),
+      3: () => $('#modeTabs [data-mode="watch"]').click(),
+      4: () => serverMode && $('#modeTabs [data-mode="movers"]').click(),
+      5: () => serverMode && $('#modeTabs [data-mode="trending"]').click()
+    };
+    if (handlers[event.key]) {
+      event.preventDefault();
+      handlers[event.key]();
+    }
+  });
+  window.addEventListener("hashchange", () => {
+    Object.assign(state, defaults, parseHash());
+    load();
+  });
+  detectServer().then((isServer) => {
+    serverMode = isServer;
+    document.body.classList.toggle("server", serverMode);
+    if (!serverMode && SERVER_MODES.includes(state.mode)) state.mode = "rising";
+    if (serverMode && !location.hash) {
+      state.mode = "movers";
+      state.sort = "delta";
+    }
+    if (serverMode) {
+      syncWatchToServer();
+      setInterval(refreshHealth, 20000);
+    }
+    load();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
