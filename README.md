@@ -1,6 +1,6 @@
 <!-- HERO:START -->
 <p align="center">
-  <a href="https://juw12.github.io/reporadar/"><img src="docs/media/banner.jpg" alt="RepoRadar: Find GitHub repos before they trend." width="100%"></a>
+  <a href="https://juw12.github.io/earlystar/"><img src="docs/media/banner.jpg" alt="EarlyStar: Find GitHub repos before they trend." width="100%"></a>
 </p>
 
 <p align="center">
@@ -9,15 +9,15 @@
 </p>
 
 <p align="center">
-  <a href="https://juw12.github.io/reporadar/"><b>Try it live</b></a> ·
+  <a href="https://juw12.github.io/earlystar/"><b>Try it live</b></a> ·
   <a href="#see-it-in-action">See it in action</a> ·
   <a href="#highlights">Highlights</a> ·
   <a href="https://github.com/juw12">More by juw12</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/juw12/reporadar"><img src="https://img.shields.io/github/last-commit/juw12/reporadar?label=updated&color=2563eb" alt="Last updated"></a>
-  <a href="https://juw12.github.io/reporadar/"><img src="https://img.shields.io/badge/demo-live-2ea44f" alt="Live demo"></a>
+  <a href="https://github.com/juw12/earlystar"><img src="https://img.shields.io/github/last-commit/juw12/earlystar?label=updated&color=2563eb" alt="Last updated"></a>
+  <a href="https://juw12.github.io/earlystar/"><img src="https://img.shields.io/badge/demo-live-2ea44f" alt="Live demo"></a>
   <img src="https://img.shields.io/badge/Web-24292f" alt="Web">
   <img src="https://img.shields.io/badge/license-MIT-2563eb" alt="MIT license">
 </p>
@@ -43,20 +43,20 @@
 ## See it in action
 
 <p align="center">
-  <a href="https://juw12.github.io/reporadar/"><img src="docs/media/demo.png" alt="RepoRadar screenshot" width="820"></a><br>
-  <sub>Open the interactive demo at <a href="https://juw12.github.io/reporadar/">juw12.github.io/reporadar/</a></sub>
+  <a href="https://juw12.github.io/earlystar/"><img src="docs/media/demo.png" alt="EarlyStar screenshot" width="820"></a><br>
+  <sub>Open the interactive demo at <a href="https://juw12.github.io/earlystar/">juw12.github.io/earlystar/</a></sub>
 </p>
 <!-- HERO:END -->
 
 ## About
 
-**Find GitHub repos before they trend.** Live at **[juw12.github.io/reporadar](https://juw12.github.io/reporadar/)**.
+**Find GitHub repos before they trend.** Live at **[juw12.github.io/earlystar](https://juw12.github.io/earlystar/)**.
 
-![RepoRadar](docs/screenshot.png)
+![EarlyStar](docs/screenshot.png)
 
-RepoRadar tracks GitHub Trending and fast-rising new repositories, keeps its own star history, and ranks repos by the stars they actually gained.
+EarlyStar tracks GitHub Trending and fast-rising new repositories, keeps its own star history, and ranks repos by the stars they actually gained.
 
-- **Movers**: biggest real star gains in 24 h / 7 d / 30 d, with the source of every number shown (tracked by RepoRadar, a brand-new repo, GitHub Trending's own count, or an estimate).
+- **Movers**: biggest real star gains in 24 h / 7 d / 30 d, with the source of every number shown (tracked by EarlyStar, a brand-new repo, GitHub Trending's own count, or an estimate).
 - **Rising**: brand-new repos ranked by stars per day and a momentum score.
 - **Trending log**: a day-by-day archive of GitHub Trending with streaks and appearance counts.
 - **Repo details**: star-history chart, Trending appearances, language breakdown, README, and exact 24 h / 7 d gains from stargazer timestamps (with your own GitHub token).
@@ -66,17 +66,17 @@ RepoRadar tracks GitHub Trending and fast-rising new repositories, keeps its own
 
 ## Badge for your README
 
-Open any repo on RepoRadar and copy the snippet from its details panel, or build it yourself:
+Open any repo on EarlyStar and copy the snippet from its details panel, or build it yourself:
 
 ```markdown
-[![RepoRadar](https://img.shields.io/endpoint?url=https%3A%2F%2Fjuw12.github.io%2Freporadar%2Fdata%2Fbadge%2FOWNER%2FNAME.json)](https://juw12.github.io/reporadar/#repo=OWNER/NAME)
+[![EarlyStar](https://img.shields.io/endpoint?url=https%3A%2F%2Fjuw12.github.io%2Fearlystar%2Fdata%2Fbadge%2FOWNER%2FNAME.json)](https://juw12.github.io/earlystar/#repo=OWNER/NAME)
 ```
 
 It shows `#3 today · +3.8k★` while the repo is a top-100 mover, `+X★ this week` otherwise, and falls back to the total stars.
 
 ## JSON API
 
-Static files on GitHub Pages, refreshed every 30 minutes, CORS-friendly, no key needed. Base URL: `https://juw12.github.io/reporadar/data/`
+Static files on GitHub Pages, refreshed every 30 minutes, CORS-friendly, no key needed. Base URL: `https://juw12.github.io/earlystar/data/`
 
 | File | What's in it |
 | --- | --- |

@@ -1,7 +1,7 @@
-# RepoRadar v2 — plan
+# EarlyStar v2 — plan
 
 Goal: close the one real gap vs trendshift.io (server-side history) while keeping
-RepoRadar's advantages (velocity for brand-new repos, unseen-only discovery, compare,
+EarlyStar's advantages (velocity for brand-new repos, unseen-only discovery, compare,
 watchlist, no install beyond Python).
 
 ## Findings that shape the design
@@ -15,7 +15,7 @@ watchlist, no install beyond Python).
 
 ## Architecture
 ```
-reporadar/
+earlystar/
   index.html      frontend (still works standalone via file://, extra tabs when served)
   collector.py    GitHub search + trending scraper → SQLite snapshots (run alone or by server)
   server.py       127.0.0.1:8765 — static file + JSON API + background collector thread

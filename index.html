@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RepoRadar — find GitHub repos before they trend</title>
+<title>EarlyStar — find GitHub repos before they trend</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%236366f1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%2306b6d4%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%278%27%20fill%3D%27url%28%23g%29%27/%3E%3Cpath%20d%3D%27M14.5%209.2l2.1%204.3%204.7.7-3.4%203.3.8%204.7-4.2-2.2-4.2%202.2.8-4.7-3.4-3.3%204.7-.7z%27%20fill%3D%27%23fff%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>
@@ -278,15 +279,14 @@
       <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
         <defs><linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
         <rect width="32" height="32" rx="8" fill="url(#brandGradient)"/>
-        <circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.6"/>
-        <circle cx="16" cy="16" r="4.5" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6"/>
-        <path d="M16 16 23.5 9.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="21.6" cy="11.2" r="1.9" fill="#fff"/>
+        <path d="M14.5 9.2l2.1 4.3 4.7.7-3.4 3.3.8 4.7-4.2-2.2-4.2 2.2.8-4.7-3.4-3.3 4.7-.7z" fill="#fff"/>
+        <path d="M23.5 6.5v3.2M21.9 8.1h3.2" stroke="#fff" stroke-opacity=".85" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M6.5 25.5l4-4" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
-      RepoRadar
+      EarlyStar
     </div>
     <nav class="nav" id="modeTabs" aria-label="Views">
-      <button data-mode="movers" class="server-only" title="Biggest real star gains, from RepoRadar's own history"><i data-icon="trending"></i>Movers</button>
+      <button data-mode="movers" class="server-only" title="Biggest real star gains, from EarlyStar's own history"><i data-icon="trending"></i>Movers</button>
       <button data-mode="rising" title="New repositories ranked by star velocity"><i data-icon="sparkles"></i>Rising</button>
       <button data-mode="established" title="Popular repositories with recent activity"><i data-icon="activity"></i>Established</button>
       <button data-mode="trending" class="server-only" title="Day-by-day archive of GitHub Trending"><i data-icon="calendar"></i>Trending</button>
@@ -436,7 +436,7 @@ function icon(name, extraClass = "") {
   return `<svg class="i ${extraClass}" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[name] || ""}</svg>`;
 }
 const SOURCE_LABELS = {
-  "tracked": "Measured from RepoRadar's own snapshots",
+  "tracked": "Measured from EarlyStar's own snapshots",
   "exact-new": "Repo was created inside this window, so all of its stars count",
   "github-trending": "Taken from GitHub Trending's own star count for this period",
   "projected": "Projected from a shorter tracked period (estimate)"
@@ -939,7 +939,7 @@ function cardHtml(repo, index) {
     repo.trending_streak >= 2
       ? `<span class="tag tag-hot" title="Consecutive days on GitHub Trending">${repo.trending_streak}-day streak</span>` : "",
     repo.trending_days >= 2 && state.mode !== "trending"
-      ? `<span class="tag" title="Days on GitHub Trending since RepoRadar started recording">${icon("trending")}Trending ${repo.trending_days}d</span>` : "",
+      ? `<span class="tag" title="Days on GitHub Trending since EarlyStar started recording">${icon("trending")}Trending ${repo.trending_days}d</span>` : "",
     showVisitDelta
       ? `<span class="tag tag-up" title="Stars gained since your visit ${formatAge(repo.deltaDays)} ago">+${formatNumber(repo.visitDelta)} since last visit</span>` : ""
   ].join("");
@@ -1204,7 +1204,7 @@ async function loadServerHistory(repo) {
       ).join("");
       box.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <b style="color:var(--text)">Star history (RepoRadar snapshots)</b>${exactButton}
+          <b style="color:var(--text)">Star history (EarlyStar snapshots)</b>${exactButton}
         </div>
         ${historyChart(data.points)}
         <div id="exactResult" style="margin:6px 0"></div>
@@ -1272,7 +1272,7 @@ async function exactGainsInBrowser(repo) {
   return { gained_24h: gained24h, gained_7d: gained7d, complete_7d: complete };
 }
 
-const PUBLIC_SITE = "https://juw12.github.io/reporadar/";
+const PUBLIC_SITE = "https://juw12.github.io/earlystar/";
 
 function engagementBlock(engagement) {
   if (!engagement) return "";
@@ -1292,11 +1292,11 @@ function engagementBlock(engagement) {
 function badgeBlock(fullName) {
   const endpoint = encodeURIComponent(`${PUBLIC_SITE}data/badge/${fullName}.json`);
   const imageUrl = `https://img.shields.io/endpoint?url=${endpoint}`;
-  const markdown = `[![RepoRadar](${imageUrl})](${PUBLIC_SITE}#repo=${fullName})`;
+  const markdown = `[![EarlyStar](${imageUrl})](${PUBLIC_SITE}#repo=${fullName})`;
   return `
     <div style="margin-top:14px"><b style="color:var(--text)">README badge</b>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <img src="${escapeHtml(imageUrl)}" alt="RepoRadar badge" height="20">
+        <img src="${escapeHtml(imageUrl)}" alt="EarlyStar badge" height="20">
         <code style="flex:1;min-width:220px;font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;overflow:auto;white-space:nowrap">${escapeHtml(markdown)}</code>
         <button class="btn small" id="copyBadge" data-markdown="${escapeHtml(markdown)}">${icon("copy")}Copy</button>
       </div>
@@ -1454,7 +1454,7 @@ function exportCsv() {
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `reporadar-${state.mode}-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `earlystar-${state.mode}-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
 }

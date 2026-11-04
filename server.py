@@ -1,4 +1,4 @@
-"""RepoRadar local server.
+"""EarlyStar local server.
 
 Serves index.html plus a small JSON API backed by the SQLite history that
 collector.py builds, and runs the collector on a schedule in the background.
@@ -361,7 +361,7 @@ def make_handler(service: CollectorService):
     stargain_cache = StarGainCache()
 
     class Handler(BaseHTTPRequestHandler):
-        server_version = "RepoRadar/2.0"
+        server_version = "EarlyStar/2.0"
 
         def log_message(self, fmt, *args):  # quiet access log; errors are logged explicitly
             pass
@@ -507,7 +507,7 @@ def make_handler(service: CollectorService):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="RepoRadar local server")
+    parser = argparse.ArgumentParser(description="EarlyStar local server")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--interval", type=float, default=30, help="minutes between collections")
     parser.add_argument("--no-collect", action="store_true", help="serve only; do not collect")
@@ -518,7 +518,7 @@ def main() -> None:
     service = CollectorService(args.interval, enabled=not args.no_collect)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(service))
     url = f"http://127.0.0.1:{args.port}/"
-    log(f"RepoRadar running at {url}  (database: {DB_PATH})")
+    log(f"EarlyStar running at {url}  (database: {DB_PATH})")
     service.start()
     if args.open:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()

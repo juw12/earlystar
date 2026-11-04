@@ -1,4 +1,4 @@
-"""RepoRadar collector.
+"""EarlyStar collector.
 
 Snapshots GitHub Trending pages and GitHub search results into SQLite so that
 star gains can be computed from real history.
@@ -31,7 +31,7 @@ TOKEN_PATH = DATA_DIR / "token.txt"
 
 API_ROOT = "https://api.github.com"
 TRENDING_ROOT = "https://github.com/trending"
-USER_AGENT = "RepoRadar/2.0 (local collector)"
+USER_AGENT = "EarlyStar/2.0 (local collector)"
 
 # Trending pages scraped every cycle: (since, language slug). "" = all languages.
 TRENDING_PAGES = [
@@ -652,7 +652,7 @@ class Collector:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="RepoRadar collector")
+    parser = argparse.ArgumentParser(description="EarlyStar collector")
     parser.add_argument("--once", action="store_true", help="run a single collection and exit")
     parser.add_argument("--interval", type=float, default=30, help="minutes between runs (loop mode)")
     args = parser.parse_args()

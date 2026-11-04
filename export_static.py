@@ -1,4 +1,4 @@
-"""Export RepoRadar's SQLite history as a static site for GitHub Pages.
+"""Export EarlyStar's SQLite history as a static site for GitHub Pages.
 
     python export_static.py site
 
@@ -39,7 +39,7 @@ def badge_payload(stars: int, rank_24h: int | None, gain_24h: int | None, gain_7
         message, color = f"+{compact(gain_7d)}★ this week", "6366f1"
     else:
         message, color = f"{compact(stars)}★ tracked", "64748b"
-    return {"schemaVersion": 1, "label": "RepoRadar", "message": message, "color": color, "cacheSeconds": 1800}
+    return {"schemaVersion": 1, "label": "EarlyStar", "message": message, "color": color, "cacheSeconds": 1800}
 
 
 def write_json(path: Path, payload) -> None:
