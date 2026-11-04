@@ -127,3 +127,7 @@ python server.py --open      # http://127.0.0.1:8765, collects every 30 min
 Python 3.10+ standard library only, nothing to install. Set `GITHUB_TOKEN` for higher GitHub API limits.
 
 MIT licensed.
+
+## License
+
+Released under the [MIT License](LICENSE) © 2026 Juwen Lie. Contributions are welcome under the same license; see the [contributing guide](https://github.com/juw12/.github/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/juw12/.github/blob/main/CODE_OF_CONDUCT.md).
