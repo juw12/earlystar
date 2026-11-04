@@ -25,8 +25,9 @@ import urllib.request
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "reporadar.db"
+DATA_DIR = Path(os.environ.get("EARLYSTAR_DATA_DIR") or BASE_DIR / "data")
+DB_PATH = DATA_DIR / "radar.db"
+LEGACY_DB_PATH = DATA_DIR / "reporadar.db"  # RepoRadar-era name, migrated on first connect
 TOKEN_PATH = DATA_DIR / "token.txt"
 
 API_ROOT = "https://api.github.com"
@@ -52,6 +53,7 @@ SEARCH_QUERY_MAX_CHARS = 250
 ENGAGEMENT_PER_RUN = 40
 ENGAGEMENT_BATCH = 10
 ENGAGEMENT_REFRESH_SECONDS = 6 * 3600
+PINNED_BY_ID_LIMIT = 40  # by-id lookups per run for pinned repos the search missed
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS repos (
@@ -116,6 +118,13 @@ CREATE TABLE IF NOT EXISTS watch (
     added_at  REAL
 );
 
+-- Repos with an open EarlyStar market: always refreshed so markets can settle.
+CREATE TABLE IF NOT EXISTS pinned (
+    repo_id   INTEGER PRIMARY KEY,
+    full_name TEXT NOT NULL COLLATE NOCASE,
+    until_ts  REAL NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS runs (
     ts        REAL PRIMARY KEY,
     duration  REAL,
@@ -127,8 +136,19 @@ CREATE TABLE IF NOT EXISTS runs (
 
 # --------------------------------------------------------------------------- storage
 
+def migrate_legacy_db(db_path: Path = DB_PATH) -> None:
+    """Rename data/reporadar.db (and its WAL files) to data/radar.db once."""
+    if db_path != DB_PATH or db_path.exists() or not LEGACY_DB_PATH.exists():
+        return
+    for suffix in ("", "-wal", "-shm"):
+        legacy = Path(str(LEGACY_DB_PATH) + suffix)
+        if legacy.exists():
+            legacy.rename(Path(str(db_path) + suffix))
+
+
 def connect(db_path: Path = DB_PATH) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    migrate_legacy_db(db_path)
     conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -531,8 +551,13 @@ class Collector:
                     if len(items) < 100:
                         break
 
-            # 3. Trending repos + watchlist not covered by search
+            # 3. Trending repos + watchlist + pinned market repos not covered by search
             watch_names = [row[0] for row in conn.execute("SELECT full_name FROM watch")]
+            pinned = {
+                row[1].lower(): row[0]
+                for row in conn.execute("SELECT repo_id, full_name FROM pinned WHERE until_ts > ?", (run_ts,))
+            }
+            watch_names += [name for name in pinned if name not in {n.lower() for n in watch_names}]
             known = {
                 row[0].lower(): row[1]
                 for row in conn.execute("SELECT full_name, id FROM repos")
@@ -572,6 +597,29 @@ class Collector:
                 self.collect_engagement(conn, run_ts, today, summary)
             except Exception as error:
                 summary["errors"].append(f"engagement: {error}")
+
+            # 5. Pinned repos still missing (usually renamed or transferred): look them up by id.
+            refreshed_ids = self._refreshed_ids(conn, run_ts)
+            missing_pinned = [
+                (repo_id, name) for name, repo_id in pinned.items()
+                if name not in refreshed and repo_id not in refreshed_ids
+            ]
+            if missing_pinned and self.client.token:
+                for repo_id, name in missing_pinned[:PINNED_BY_ID_LIMIT]:
+                    try:
+                        item, _ = self.client.api(f"/repositories/{repo_id}")
+                    except Exception as error:
+                        summary["errors"].append(f"pinned {name}: {error}")
+                        continue
+                    with conn:
+                        upsert_repo(conn, item, run_ts)
+                        conn.execute(
+                            "UPDATE pinned SET full_name = ? WHERE repo_id = ?", (item["full_name"], repo_id)
+                        )
+                    refreshed.add(item["full_name"].lower())
+                summary["pinned_by_id"] = min(len(missing_pinned), PINNED_BY_ID_LIMIT)
+            elif missing_pinned:
+                summary["pinned_missing"] = len(missing_pinned)
 
             with conn:
                 removed = compact_snapshots(conn, run_ts)
@@ -644,6 +692,10 @@ class Collector:
         summary["engagement"] = updated
         if names:
             self.log(f"  engagement updated for {updated} of {len(names)} repos")
+
+    @staticmethod
+    def _refreshed_ids(conn: sqlite3.Connection, run_ts: float) -> set:
+        return {row[0] for row in conn.execute("SELECT repo_id FROM snapshots WHERE ts = ?", (run_ts,))}
 
     @staticmethod
     def _canonical_name(name: str, conn: sqlite3.Connection) -> str:
