@@ -1,0 +1,100 @@
+name: Desktop apps
+
+# Builds the EarlyStar desktop wrapper (Tauri) for Windows and macOS and
+# publishes EarlyStar-Setup-x64.exe, EarlyStar-portable-x64.exe and
+# EarlyStar-macOS.dmg as a GitHub release.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+          - os: macos-latest
+            name: macos
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.name == 'macos' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Windows installer + portable exe
+        if: matrix.name == 'windows'
+        run: |
+          npx --yes @tauri-apps/cli@2 build --bundles nsis
+          mkdir -p out
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe out/EarlyStar-Setup-x64.exe
+          cp src-tauri/target/release/earlystar.exe out/EarlyStar-portable-x64.exe
+
+      - name: Build macOS universal dmg
+        if: matrix.name == 'macos'
+        run: |
+          npx --yes @tauri-apps/cli@2 build --target universal-apple-darwin --bundles dmg
+          mkdir -p out
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg out/EarlyStar-macOS.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: earlystar-${{ matrix.name }}
+          path: desktop/out/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('desktop/src-tauri/tauri.conf.json'))['version'])")
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]]; then tag="v${version}"; fi
+          cat > notes.md <<'EOF'
+          EarlyStar desktop app: a native window around the live site, so the data is always current.
+
+          | Platform | Download |
+          | --- | --- |
+          | Windows 10/11 (installer) | `EarlyStar-Setup-x64.exe` |
+          | Windows (no install) | `EarlyStar-portable-x64.exe` |
+          | macOS 10.15+ (Apple Silicon + Intel) | `EarlyStar-macOS.dmg` |
+
+          The apps are not code-signed yet:
+          - **Windows**: if SmartScreen says "Windows protected your PC", click **More info → Run anyway**.
+          - **macOS**: open the dmg, drag EarlyStar to Applications, then right-click the app → **Open** (or System Settings → Privacy & Security → **Open Anyway**).
+          EOF
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --title "EarlyStar ${version}" --notes-file notes.md --target "$GITHUB_SHA"
+          fi
