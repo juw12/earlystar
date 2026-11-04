@@ -9,3 +9,4 @@ index.before-redesign.html
 !desktop/**/*.png
 desktop/src-tauri/target/
 desktop/src-tauri/gen/
+!icons/*.png

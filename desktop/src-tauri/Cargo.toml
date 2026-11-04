@@ -1,6 +1,6 @@
 [package]
 name = "earlystar"
-version = "1.0.0"
+version = "1.0.1"
 description = "EarlyStar: find GitHub repos before they trend"
 authors = ["juw12"]
 license = "MIT"

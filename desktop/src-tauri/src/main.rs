@@ -1,7 +1,8 @@
 // EarlyStar desktop: a native window around the live site, so data is always current.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{Url, WebviewUrl, WebviewWindowBuilder};
+use tauri::webview::DownloadEvent;
+use tauri::{Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
 const SITE: &str = "https://juw12.github.io/earlystar/";
 
@@ -39,6 +40,25 @@ fn main() {
                     if is_web && !is_inside_app(url) {
                         let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
                         return false;
+                    }
+                    true
+                })
+                // CSV export etc.: save into the user's Downloads folder, then show the file.
+                .on_download(|webview, event| {
+                    match event {
+                        DownloadEvent::Requested { destination, .. } => {
+                            if let Ok(downloads) = webview.app_handle().path().download_dir() {
+                                let name = destination
+                                    .file_name()
+                                    .map(|name| name.to_owned())
+                                    .unwrap_or_else(|| "earlystar-export.csv".into());
+                                *destination = downloads.join(name);
+                            }
+                        }
+                        DownloadEvent::Finished { path: Some(path), success: true, .. } => {
+                            let _ = tauri_plugin_opener::reveal_item_in_dir(path);
+                        }
+                        _ => {}
                     }
                     true
                 })

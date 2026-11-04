@@ -64,7 +64,9 @@ EarlyStar tracks GitHub Trending and fast-rising new repositories, keeps its own
 - **README badges + open JSON API**: every tracked repo gets a live badge and all data is plain JSON (see below).
 - **Discovery tools**: "new to me" and "hide seen", a watchlist, side-by-side compare, CSV export, keyboard shortcuts, light and dark themes.
 
-## Desktop app
+## Apps
+
+### Desktop (Windows & macOS)
 
 Prefer a real app window? Download it (about 5–10 MB; it opens the live site, so data is always current):
 
@@ -74,6 +76,13 @@ Prefer a real app window? Download it (about 5–10 MB; it opens the live site, 
 | macOS 10.15+ (Apple Silicon + Intel) | [EarlyStar-macOS.dmg](https://github.com/juw12/earlystar/releases/latest/download/EarlyStar-macOS.dmg) |
 
 The apps aren't code-signed yet. On Windows, if SmartScreen appears click **More info → Run anyway**. On macOS, drag EarlyStar to Applications, then right-click it → **Open** the first time.
+
+### Phone (iPhone & Android)
+
+No app store needed: EarlyStar installs straight from the website as an app with its own icon, full screen.
+
+- **iPhone / iPad**: open [juw12.github.io/earlystar](https://juw12.github.io/earlystar/) in **Safari** → Share button → **Add to Home Screen**.
+- **Android**: open it in **Chrome** → tap **Install app** (or ⋮ menu → **Install app / Add to Home screen**).
 
 ## Badge for your README
 

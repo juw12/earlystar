@@ -53,6 +53,10 @@ def export(out_dir: Path) -> dict:
     data_dir = out_dir / "data"
     data_dir.mkdir(parents=True)
     shutil.copy(BASE_DIR / "index.html", out_dir / "index.html")
+    # Installable web app (PWA): manifest, service worker and icons.
+    for name in ("manifest.webmanifest", "sw.js"):
+        shutil.copy(BASE_DIR / name, out_dir / name)
+    shutil.copytree(BASE_DIR / "icons", out_dir / "icons")
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")
 
     conn = connect()

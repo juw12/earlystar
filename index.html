@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EarlyStar — find GitHub repos before they trend</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EarlyStar">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="Find GitHub repos before they trend: real star gains, activity and a GitHub Trending archive.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%236366f1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%2306b6d4%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%278%27%20fill%3D%27url%28%23g%29%27/%3E%3Cpath%20d%3D%27M14.5%209.2l2.1%204.3%204.7.7-3.4%203.3.8%204.7-4.2-2.2-4.2%202.2.8-4.7-3.4-3.3%204.7-.7z%27%20fill%3D%27%23fff%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -62,7 +71,7 @@
                background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: saturate(180%) blur(12px); }
   .top-inner { max-width: 1320px; margin: 0 auto; height: 60px; padding: 0 24px; display: flex; align-items: center; gap: 22px; }
   .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15.5px; letter-spacing: -.02em; white-space: nowrap; }
-  .nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
   .nav button { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px; border: 0; border-radius: 8px;
                 background: none; color: var(--muted); font-weight: 500; font-size: 13.5px; cursor: pointer; white-space: nowrap;
                 transition: color .15s, background .15s; }
@@ -94,9 +103,10 @@
   .btn:disabled { opacity: .5; cursor: default; }
 
   /* ---------- layout ---------- */
-  main { max-width: 1320px; margin: 0 auto; padding: 28px 24px 80px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; }
+  main { max-width: 1320px; margin: 0 auto; padding: 28px 24px 80px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-width: 0; gap: 28px; align-items: start; }
   @media (max-width: 1100px) {
-    main { grid-template-columns: 1fr; }
+    main { grid-template-columns: minmax(0, 1fr); }
+    main > * { min-width: 0; }
     aside { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
     .search { width: 200px; }
   }
@@ -195,8 +205,19 @@
   .meter { width: 52px; height: 4px; background: var(--surface-3); border-radius: 99px; overflow: hidden; display: inline-block; }
   .meter i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
   @media (max-width: 720px) {
-    .top-inner { gap: 12px; padding: 0 14px; }
+    .top-inner { gap: 8px 12px; padding: 8px 14px; height: auto; flex-wrap: wrap; }
+    .nav { order: 3; flex: 1 0 100%; margin: 0 -4px; }
     .search { display: none; }
+    main { padding: 18px 12px 80px; }
+    .drawer { width: 100vw; }
+    .drawer .dhead { flex-wrap: wrap; padding: 14px 16px; row-gap: 10px; }
+    .drawer .dhead > div { flex: 1 0 calc(100% - 110px) !important; }
+    .drawer .dhead #closeDrawer { order: 2; }
+    .drawer .dhead .btn { order: 3; }
+    .drawer .dhead .btn:first-of-type { margin-left: 52px; }
+    .drawer .dbody { padding: 16px; }
+    .drawer .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .card { padding: 14px 12px; gap: 0 12px; }
     .card { grid-template-columns: 40px minmax(0, 1fr); }
     .rank { display: none; }
     .metric { grid-column: 2; text-align: left; display: flex; gap: 10px; align-items: baseline; padding-top: 8px; }
@@ -296,6 +317,7 @@
       <label class="search"><i data-icon="search"></i><input id="q" placeholder="Filter repositories…" autocomplete="off"><kbd>/</kbd></label>
       <button class="ghost-icon" id="exportBtn" title="Export current list as CSV" aria-label="Export CSV"><i data-icon="download"></i></button>
       <button class="ghost-icon" id="tokenBtn" title="GitHub token (higher rate limits)" aria-label="GitHub token"><i data-icon="key"></i></button>
+      <button class="ghost-icon" id="installBtn" title="Install EarlyStar as an app" aria-label="Install app" style="display:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 7v7m-3-3 3 3 3-3M10 18h4"/></svg></button>
       <button class="ghost-icon" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme"><i data-icon="moon" data-class="i-moon"></i><i data-icon="sun" data-class="i-sun"></i></button>
     </div>
   </div>
@@ -1682,6 +1704,28 @@ function init() {
 }
 
 init();
+
+// Installable app (PWA): register the service worker and show an "Install app" button where supported.
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+let installPrompt = null;
+const installBtn = document.getElementById("installBtn");
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  installBtn.style.display = "";
+});
+installBtn.addEventListener("click", async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  installBtn.style.display = "none";
+});
+window.addEventListener("appinstalled", () => {
+  installBtn.style.display = "none";
+});
 </script>
 </body>
 </html>
