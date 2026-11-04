@@ -427,7 +427,9 @@ const ICON_PATHS = {
   zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
   checks: '<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>',
   database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
-  x: '<path d="M18 6 6 18M6 6l12 12"/>'
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  commit: '<circle cx="12" cy="12" r="3"/><path d="M3 12h6M15 12h6"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'
 };
 
 function icon(name, extraClass = "") {
@@ -856,9 +858,11 @@ async function load(forceRefresh = false) {
     lastLoaded = new Date();
     render();
     if (pendingRepo) {
-      const target = repos.find((repo) => repo.full_name.toLowerCase() === pendingRepo.toLowerCase());
+      const pendingRepoName = pendingRepo;
+      const target = repos.find((repo) => repo.full_name.toLowerCase() === pendingRepoName.toLowerCase());
       pendingRepo = null;
       if (target) openDetails(target);
+      else openTrackedRepo(pendingRepoName);
     }
   } catch (error) {
     if (myToken !== loadToken) return;
@@ -965,6 +969,7 @@ function cardHtml(repo, index) {
         <span title="Total stars">${icon("star")}${formatNumber(repo.stargazers_count)}</span>
         <span title="Forks">${icon("fork")}${formatNumber(repo.forks_count)}</span>
         <span title="${velocityLabel}">${icon("zap")}${formatNumber(repo.velocity)}/day</span>
+        ${repo.engagement?.commits_7d != null ? `<span title="Last 7 days: ${repo.engagement.commits_7d} commits, ${repo.engagement.merged_prs_7d ?? 0} merged PRs, ${repo.engagement.new_issues_7d ?? 0} new issues">${icon("commit")}${formatNumber(repo.engagement.commits_7d)} commits · ${formatNumber(repo.engagement.merged_prs_7d ?? 0)} PRs /wk</span>` : ""}
         <span title="Last push">${icon("clock")}Updated ${formatAge(repo.sincePushDays)} ago</span>
         ${repo.ageDays !== null ? `<span title="Repository age">Created ${formatAge(repo.ageDays)} ago</span>` : ""}
         ${license ? `<span>${escapeHtml(license)}</span>` : ""}
@@ -1203,10 +1208,20 @@ async function loadServerHistory(repo) {
         </div>
         ${historyChart(data.points)}
         <div id="exactResult" style="margin:6px 0"></div>
+        ${engagementBlock(data.repo.engagement)}
+        ${badgeBlock(data.repo.full_name)}
         ${appearances ? `<div style="margin-top:8px"><b style="color:var(--text)">GitHub Trending appearances</b><div class="topics">${appearances}</div></div>` : '<div style="margin-top:6px">Not seen on GitHub Trending since recording started.</div>'}`;
     } catch (error) {
       box.innerHTML = `${escapeHtml(error.message)} ${exactButton}`;
     }
+  }
+  const copyButton = $("#copyBadge");
+  if (copyButton) {
+    copyButton.onclick = () => {
+      navigator.clipboard.writeText(copyButton.dataset.markdown)
+        .then(() => toast("Badge markdown copied — paste it into your README"))
+        .catch(() => toast("Copy failed — select the text instead"));
+    };
   }
   const button = $("#exactGains");
   if (button) {
@@ -1257,6 +1272,57 @@ async function exactGainsInBrowser(repo) {
   return { gained_24h: gained24h, gained_7d: gained7d, complete_7d: complete };
 }
 
+const PUBLIC_SITE = "https://juw12.github.io/reporadar/";
+
+function engagementBlock(engagement) {
+  if (!engagement) return "";
+  const release = engagement.release_tag
+    ? `${escapeHtml(engagement.release_tag)}<div class="k">${new Date(engagement.release_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>`
+    : "—";
+  return `
+    <div style="margin-top:14px"><b style="color:var(--text)">Activity · last 7 days</b></div>
+    <div class="stats-grid" style="margin-top:8px">
+      <div class="kpi"><div class="v">${formatNumber(engagement.commits_7d ?? 0)}</div><div class="k">commits</div></div>
+      <div class="kpi"><div class="v">${formatNumber(engagement.merged_prs_7d ?? 0)}</div><div class="k">merged PRs</div></div>
+      <div class="kpi"><div class="v">${formatNumber(engagement.new_issues_7d ?? 0)}</div><div class="k">new issues</div></div>
+      <div class="kpi"><div class="v" style="font-size:15px">${release}</div><div class="k">latest release</div></div>
+    </div>`;
+}
+
+function badgeBlock(fullName) {
+  const endpoint = encodeURIComponent(`${PUBLIC_SITE}data/badge/${fullName}.json`);
+  const imageUrl = `https://img.shields.io/endpoint?url=${endpoint}`;
+  const markdown = `[![RepoRadar](${imageUrl})](${PUBLIC_SITE}#repo=${fullName})`;
+  return `
+    <div style="margin-top:14px"><b style="color:var(--text)">README badge</b>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+        <img src="${escapeHtml(imageUrl)}" alt="RepoRadar badge" height="20">
+        <code style="flex:1;min-width:220px;font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;overflow:auto;white-space:nowrap">${escapeHtml(markdown)}</code>
+        <button class="btn small" id="copyBadge" data-markdown="${escapeHtml(markdown)}">${icon("copy")}Copy</button>
+      </div>
+    </div>`;
+}
+
+// Badge links point at #repo=owner/name; open it even when the repo is not in the current list.
+async function openTrackedRepo(fullName) {
+  if (dataMode !== "static") return;
+  try {
+    const index = await staticJson("repos.json");
+    const key = Object.keys(index).find((name) => name.toLowerCase() === fullName.toLowerCase());
+    if (!key) return;
+    const data = await staticJson(`history/${index[key]}.json`);
+    // Prefer the 24h movers entry (has observed gains + momentum); fall back to the bare repo.
+    const movers = await staticJson("movers-24h.json").catch(() => null);
+    const moverItems = Array.isArray(movers) ? movers : movers?.items || [];
+    const mover = moverItems.find((item) => item.id === data.repo.id);
+    const repo = mover || data.repo;
+    repo.trending_days ??= new Set((data.trending || []).map((entry) => entry.day)).size;
+    openDetails(enrich(repo));
+  } catch {
+    // not tracked: just show the list
+  }
+}
+
 function axisLabel(value, other) {
   // Use exact numbers when compact formatting would make both ends look identical.
   return formatNumber(value) === formatNumber(other) ? value.toLocaleString() : formatNumber(value);
@@ -1281,6 +1347,8 @@ function historyChart(points) {
   const area = `${pad.left},${height - pad.bottom} ${line} ${x(maxT).toFixed(1)},${height - pad.bottom}`;
   const label = (t) => new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   const gained = stars[stars.length - 1] - stars[0];
+  const forkValues = points.map((p) => p[2]).filter((value) => value !== null && value !== undefined);
+  const forkText = forkValues.length > 1 ? ` · ${signed(forkValues[forkValues.length - 1] - forkValues[0])} forks` : "";
   return `
     <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Star history">
       <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
@@ -1295,7 +1363,7 @@ function historyChart(points) {
       <text x="${pad.left}" y="${height - 6}">${label(minT)}</text>
       <text x="${width - pad.right}" y="${height - 6}" text-anchor="end">${label(maxT)}</text>
     </svg>
-    <div class="muted" style="font-size:12px">${signed(gained)} ★ over ${formatAge((maxT - minT) / DAY_MS)} · ${points.length} snapshots</div>`;
+    <div class="muted" style="font-size:12px">${signed(gained)} ★${forkText} over ${formatAge((maxT - minT) / DAY_MS)} · ${points.length} snapshots</div>`;
 }
 
 /* ---------- compare ---------- */

@@ -20,6 +20,26 @@ from collector import BASE_DIR, connect
 from server import WINDOWS, query_health, query_history, query_movers, query_trending
 
 TRENDING_DAYS_KEPT = 60
+BADGE_TOP_RANK = 100  # repos in the top 100 of 24h movers get a rank badge
+
+
+def compact(number: int) -> str:
+    if number >= 1_000_000:
+        return f"{number / 1_000_000:.1f}".rstrip("0").rstrip(".") + "M"
+    if number >= 1_000:
+        return f"{number / 1_000:.1f}".rstrip("0").rstrip(".") + "k"
+    return str(number)
+
+
+def badge_payload(stars: int, rank_24h: int | None, gain_24h: int | None, gain_7d: int | None) -> dict:
+    """shields.io endpoint format: https://shields.io/badges/endpoint-badge"""
+    if rank_24h is not None and rank_24h <= BADGE_TOP_RANK and gain_24h and gain_24h > 0:
+        message, color = f"#{rank_24h} today · +{compact(gain_24h)}★", "4f46e5"
+    elif gain_7d and gain_7d > 0:
+        message, color = f"+{compact(gain_7d)}★ this week", "6366f1"
+    else:
+        message, color = f"{compact(stars)}★ tracked", "64748b"
+    return {"schemaVersion": 1, "label": "RepoRadar", "message": message, "color": color, "cacheSeconds": 1800}
 
 
 def write_json(path: Path, payload) -> None:
@@ -37,8 +57,10 @@ def export(out_dir: Path) -> dict:
 
     conn = connect()
     try:
+        movers = {}
         for window in WINDOWS:
-            write_json(data_dir / f"movers-{window}.json", query_movers(conn, window, None, 0, 1000))
+            movers[window] = query_movers(conn, window, None, 0, 1000)
+            write_json(data_dir / f"movers-{window}.json", movers[window])
 
         days = [row[0] for row in conn.execute(
             "SELECT DISTINCT day FROM trending ORDER BY day DESC LIMIT ?", (TRENDING_DAYS_KEPT,))]
@@ -55,9 +77,19 @@ def export(out_dir: Path) -> dict:
             "languages": sorted({language for _, language in combos}),
         })
 
-        repo_ids = [row[0] for row in conn.execute("SELECT id FROM repos")]
+        repo_rows = conn.execute("SELECT id, full_name, stars FROM repos").fetchall()
+        repo_ids = [row[0] for row in repo_rows]
         for repo_id in repo_ids:
             write_json(data_dir / "history" / f"{repo_id}.json", query_history(conn, repo_id))
+
+        # Public lookup index and README badges (shields.io endpoint JSON) for every tracked repo.
+        write_json(data_dir / "repos.json", {full_name: repo_id for repo_id, full_name, _ in repo_rows})
+        rank_24h = {item["id"]: index + 1 for index, item in enumerate(movers["24h"]["items"])}
+        gain_24h = {item["id"]: item["gain"] for item in movers["24h"]["items"]}
+        gain_7d = {item["id"]: item["gain"] for item in movers["7d"]["items"]}
+        for repo_id, full_name, stars in repo_rows:
+            payload = badge_payload(stars or 0, rank_24h.get(repo_id), gain_24h.get(repo_id), gain_7d.get(repo_id))
+            write_json(data_dir / "badge" / f"{full_name}.json", payload)
 
         last_run = conn.execute("SELECT ts, duration FROM runs ORDER BY ts DESC LIMIT 1").fetchone()
         last_finished = (last_run[0] + (last_run[1] or 0)) if last_run else None

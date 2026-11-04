@@ -48,6 +48,10 @@ TRENDING_PAGES = [
 # Snapshots older than this are thinned to one per repo per day.
 FULL_RESOLUTION_DAYS = 7
 SEARCH_QUERY_MAX_CHARS = 250
+# Engagement (commits / merged PRs / new issues in 7 days, latest release) via GraphQL.
+ENGAGEMENT_PER_RUN = 40
+ENGAGEMENT_BATCH = 10
+ENGAGEMENT_REFRESH_SECONDS = 6 * 3600
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS repos (
@@ -96,6 +100,16 @@ CREATE TABLE IF NOT EXISTS trending (
     PRIMARY KEY (day, since, language, full_name)
 );
 CREATE INDEX IF NOT EXISTS idx_trending_name ON trending(full_name COLLATE NOCASE);
+
+CREATE TABLE IF NOT EXISTS engagement (
+    repo_id        INTEGER PRIMARY KEY,
+    updated_at     REAL,
+    commits_7d     INTEGER,
+    merged_prs_7d  INTEGER,
+    new_issues_7d  INTEGER,
+    release_tag    TEXT,
+    release_at     TEXT
+);
 
 CREATE TABLE IF NOT EXISTS watch (
     full_name TEXT PRIMARY KEY COLLATE NOCASE,
@@ -265,6 +279,21 @@ class GitHubClient:
         body, headers = self._open(API_ROOT + path, accept)
         return json.loads(body), headers
 
+    def graphql(self, query: str) -> dict:
+        """Run a GraphQL query (requires a token). Partial results are returned even if some aliases fail."""
+        request = urllib.request.Request(
+            API_ROOT + "/graphql",
+            data=json.dumps({"query": query}).encode("utf-8"),
+            headers={
+                "User-Agent": USER_AGENT,
+                "Authorization": "Bearer " + self.token,
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=60) as response:
+            payload = json.load(response)
+        return payload.get("data") or {}
+
     def search(self, query: str, page: int = 1, per_page: int = 100) -> list[dict]:
         wait = self._last_search + self.search_interval - time.time()
         if wait > 0:
@@ -373,6 +402,43 @@ def iso_to_ts(value: str | None) -> float | None:
     if not value:
         return None
     return dt.datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+
+
+def engagement_query(names: list[str], since: dt.datetime) -> str:
+    """One GraphQL query with three aliases per repo: repository details plus two issue searches."""
+    since_iso = since.strftime("%Y-%m-%dT%H:%M:%SZ")
+    since_day = since.strftime("%Y-%m-%d")
+    parts = []
+    for index, full_name in enumerate(names):
+        owner, name = full_name.split("/", 1)
+        merged = json.dumps(f"repo:{full_name} is:pr is:merged merged:>={since_day}")
+        opened = json.dumps(f"repo:{full_name} is:issue created:>={since_day}")
+        parts.append(
+            f"r{index}: repository(owner: {json.dumps(owner)}, name: {json.dumps(name)}) {{ "
+            f"defaultBranchRef {{ target {{ ... on Commit {{ history(since: \"{since_iso}\") {{ totalCount }} }} }} }} "
+            f"latestRelease {{ tagName publishedAt }} }}\n"
+            f"p{index}: search(query: {merged}, type: ISSUE, first: 0) {{ issueCount }}\n"
+            f"i{index}: search(query: {opened}, type: ISSUE, first: 0) {{ issueCount }}\n"
+        )
+    return "query {\n" + "".join(parts) + "}"
+
+
+def parse_engagement(data: dict, names: list[str]) -> dict[str, dict]:
+    results = {}
+    for index, full_name in enumerate(names):
+        repo = data.get(f"r{index}")
+        if not repo:
+            continue
+        target = (repo.get("defaultBranchRef") or {}).get("target") or {}
+        release = repo.get("latestRelease") or {}
+        results[full_name] = {
+            "commits_7d": (target.get("history") or {}).get("totalCount"),
+            "merged_prs_7d": (data.get(f"p{index}") or {}).get("issueCount"),
+            "new_issues_7d": (data.get(f"i{index}") or {}).get("issueCount"),
+            "release_tag": release.get("tagName"),
+            "release_at": release.get("publishedAt"),
+        }
+    return results
 
 
 def chunk_repo_queries(names: list[str]) -> list[str]:
@@ -501,6 +567,12 @@ class Collector:
             if pending:
                 self.log(f"  resolved {summary['resolved']} of {len(pending)} trending/watch repos")
 
+            # 4. Engagement for the hottest repos (token required for GraphQL)
+            try:
+                self.collect_engagement(conn, run_ts, today, summary)
+            except Exception as error:
+                summary["errors"].append(f"engagement: {error}")
+
             with conn:
                 removed = compact_snapshots(conn, run_ts)
             summary["snapshots"] = len(refreshed)
@@ -514,6 +586,64 @@ class Collector:
                 )
             conn.close()
         return summary
+
+    def collect_engagement(self, conn: sqlite3.Connection, run_ts: float, today: dt.date, summary: dict) -> None:
+        """Commits, merged PRs and new issues in the last 7 days plus latest release, for today's hottest repos."""
+        if not self.client.token:
+            return
+        # Hotness = biggest trending period gain today (daily list counts most).
+        trending_today = {
+            row[0].lower(): row[1] or 0
+            for row in conn.execute(
+                """
+                SELECT full_name, MAX(CASE since WHEN 'daily' THEN period_stars * 30
+                                                 WHEN 'weekly' THEN period_stars * 4
+                                                 ELSE period_stars END)
+                FROM trending WHERE day = ? GROUP BY full_name
+                """,
+                (today.isoformat(),),
+            )
+        }
+        new_since = (today - dt.timedelta(days=7)).isoformat()
+        rows = conn.execute(
+            """
+            SELECT r.id, r.full_name, r.created_at FROM repos r
+            LEFT JOIN engagement e ON e.repo_id = r.id
+            WHERE e.updated_at IS NULL OR e.updated_at < ?
+            ORDER BY r.stars DESC
+            """,
+            (run_ts - ENGAGEMENT_REFRESH_SECONDS,),
+        ).fetchall()
+        # Hottest trending repos first, then brand-new repos by stars.
+        candidates = sorted(
+            (row for row in rows if row[1].lower() in trending_today),
+            key=lambda row: trending_today[row[1].lower()],
+            reverse=True,
+        )
+        candidates += [row for row in rows if row[1].lower() not in trending_today and (row[2] or "") >= new_since]
+        candidates = candidates[:ENGAGEMENT_PER_RUN]
+        ids = {row[1]: row[0] for row in candidates}
+        names = list(ids)
+        since = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=7)
+        updated = 0
+        for start in range(0, len(names), ENGAGEMENT_BATCH):
+            batch = names[start:start + ENGAGEMENT_BATCH]
+            results = parse_engagement(self.client.graphql(engagement_query(batch, since)), batch)
+            with conn:
+                for full_name, values in results.items():
+                    conn.execute(
+                        """
+                        INSERT OR REPLACE INTO engagement
+                            (repo_id, updated_at, commits_7d, merged_prs_7d, new_issues_7d, release_tag, release_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (ids[full_name], run_ts, values["commits_7d"], values["merged_prs_7d"],
+                         values["new_issues_7d"], values["release_tag"], values["release_at"]),
+                    )
+            updated += len(results)
+        summary["engagement"] = updated
+        if names:
+            self.log(f"  engagement updated for {updated} of {len(names)} repos")
 
     @staticmethod
     def _canonical_name(name: str, conn: sqlite3.Connection) -> str:

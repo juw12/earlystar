@@ -2,7 +2,7 @@ name: Collect and deploy
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # every 30 minutes
+    - cron: "7,37 * * * *"   # every 30 minutes, off the busy :00/:30 marks GitHub tends to delay
   workflow_dispatch:
   push:
     branches: [main]

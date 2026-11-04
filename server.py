@@ -114,7 +114,17 @@ def repo_to_dict(row) -> dict:
         return row[name] if name in keys and row[name] is not None else default
 
     full_name = get("full_name", "")
+    engagement = None
+    if get("commits_7d") is not None or get("merged_prs_7d") is not None:
+        engagement = {
+            "commits_7d": get("commits_7d"),
+            "merged_prs_7d": get("merged_prs_7d"),
+            "new_issues_7d": get("new_issues_7d"),
+            "release_tag": get("release_tag"),
+            "release_at": get("release_at"),
+        }
     return {
+        "engagement": engagement,
         "id": get("id") or get("repo_id"),
         "full_name": full_name,
         "html_url": get("html_url") or f"https://github.com/{full_name}",
@@ -142,8 +152,10 @@ WITH latest AS (SELECT repo_id, MAX(ts) AS ts FROM snapshots GROUP BY repo_id),
 SELECT r.*,
        cs.stars AS cur_stars, cs.ts AS cur_ts,
        fs.stars AS first_stars, fs.ts AS first_ts,
-       bs.stars AS base_stars, bs.ts AS base_ts
+       bs.stars AS base_stars, bs.ts AS base_ts,
+       e.commits_7d, e.merged_prs_7d, e.new_issues_7d, e.release_tag, e.release_at
 FROM repos r
+LEFT JOIN engagement e ON e.repo_id = r.id
 JOIN latest l     ON l.repo_id = r.id
 JOIN snapshots cs ON cs.repo_id = l.repo_id AND cs.ts = l.ts
 JOIN first f      ON f.repo_id = r.id
@@ -245,10 +257,12 @@ def query_trending(conn, since: str, day: str | None, language: str) -> dict:
         SELECT t.rank, t.full_name, t.period_stars, t.stars AS t_stars, t.forks AS t_forks,
                t.repo_language, t.description AS t_description,
                r.id, r.owner_login, r.avatar_url, r.html_url, r.description, r.language, r.topics, r.license,
-               r.homepage, r.created_at, r.pushed_at, r.stars, r.forks, r.open_issues
+               r.homepage, r.created_at, r.pushed_at, r.stars, r.forks, r.open_issues,
+               e.commits_7d, e.merged_prs_7d, e.new_issues_7d, e.release_tag, e.release_at
         FROM trending t
         LEFT JOIN repos r ON r.id = (
             SELECT id FROM repos WHERE full_name = t.full_name ORDER BY last_seen DESC LIMIT 1)
+        LEFT JOIN engagement e ON e.repo_id = r.id
         WHERE t.day = ? AND t.since = ? AND t.language = ?
         ORDER BY t.rank
         """,
@@ -279,7 +293,14 @@ def query_trending(conn, since: str, day: str | None, language: str) -> dict:
 
 
 def query_history(conn, repo_id: int) -> dict | None:
-    row = conn.execute("SELECT * FROM repos WHERE id = ?", (repo_id,)).fetchone()
+    row = conn.execute(
+        """
+        SELECT r.*, e.commits_7d, e.merged_prs_7d, e.new_issues_7d, e.release_tag, e.release_at
+        FROM repos r LEFT JOIN engagement e ON e.repo_id = r.id
+        WHERE r.id = ?
+        """,
+        (repo_id,),
+    ).fetchone()
     if row is None:
         return None
     points = conn.execute(
