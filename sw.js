@@ -1,5 +1,5 @@
 // EarlyStar service worker: network first (data refreshes every 30 min), cache as offline fallback.
-const CACHE = "earlystar-v1";
+const CACHE = "earlystar-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -17,7 +17,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  // Never cache live/personal data: API responses (balances, positions) and sign-in redirects.
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
   event.respondWith(
     fetch(request)
       .then((response) => {

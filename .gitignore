@@ -10,3 +10,5 @@ index.before-redesign.html
 desktop/src-tauri/target/
 desktop/src-tauri/gen/
 !icons/*.png
+logs/
+.env

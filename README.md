@@ -118,15 +118,91 @@ A GitHub Action (`.github/workflows/collect.yml`) runs every 30 minutes (at :07 
 
 `index.html` is a single file with no build step. It reads those JSON files on GitHub Pages, talks to `server.py` when run locally, and still works opened straight from disk (Rising / Established / Watchlist only).
 
+## Calls: play-money predictions on repos
+
+Spot a repo early, then **call it**: "Will `owner/repo` reach 10k★ by Dec 31?", "Will A out-star B this week?", "Will it trend 4 of the next 7 days?" Calls **settle themselves** from EarlyStar's own snapshots, so there's no human judge and nothing to dispute.
+
+> Points are play money. They have no cash value and can't be bought, sold, transferred or withdrawn.
+
+### What you get
+
+- **Calls list** with live odds, 24 h change, volume, traders and progress toward the target.
+- **Market drawer**: odds chart, stars-vs-target chart (or a versus/Trending view), trade panel with a live quote, your position and P&L, the settlement rules, recent trades and top holders.
+- **Trading** against an LMSR automated market maker, so every call has a price from the first second. Slippage protection is built in.
+- **New call**: pick a repo and EarlyStar suggests a target and opening odds from its momentum model. Creating a call costs 50 points.
+- **Auto calls** generated from the radar every 6 hours: star targets for top movers, Trending streaks, and versus pairs.
+- **Portfolio, Leaderboard** (profit, accuracy, best early calls) and **public profiles**.
+- **Radar integration**: every repo card shows its live odds and has a "Call it" button.
+- **Integrity**: owners can't trade their own repos, accounts must be at least 14 days old, at most 500 points at risk per call, rate limits, and a star-spike review before paying out a suspicious YES.
+
+
+### How calls settle
+
+| Call | Settles YES when… | Otherwise |
+|---|---|---|
+| **Star target** | any snapshot taken before the deadline shows ≥ target (early) | uses the first snapshot taken at or after the deadline. If there is none within 6 h, it falls back to the last snapshot in the 3 h before the deadline; if that's missing too, the call is **voided** and everyone is refunded |
+| **Versus** | A gained strictly more stars than B since the call opened | a tie or missing data voids the call |
+| **Trending** | the repo is logged on daily Trending (all languages) on N distinct days (early) | NO at the end of the window. If EarlyStar missed days and those days could have changed the answer, the call is voided |
+
+A YES that follows a star spike (≥ 200★ in 48 h and more than 5× the prior week's rate) goes to **review**, and an admin settles or voids it.
+
+
 ## Run it locally
 
 ```bash
-python server.py --open      # http://127.0.0.1:8765, collects every 30 min
+python3 server.py --dev-login --open     # http://127.0.0.1:8765
 ```
 
-Python 3.10+ standard library only, nothing to install. Set `GITHUB_TOKEN` for higher GitHub API limits.
+- `--dev-login` lets you sign in with any username so you can try everything locally. It is refused together with `--public`.
+- The first collection takes 1–2 minutes. Auto calls appear once fresh data exists.
+- Optional: `export GITHUB_TOKEN=ghp_...` (a token with no scopes is fine) for higher GitHub rate limits.
+- Make yourself an admin: `export EARLYSTAR_ADMINS=juw12`. Admins see the review queue and can settle or void calls.
+- On Windows, double-click `start.bat`. On macOS/Linux, run `./start.sh`.
 
-MIT licensed.
+Needs Python 3.9 or newer. It uses only the standard library, so there's nothing to install.
+
+## Deploy with accounts (public server)
+
+1. Create a GitHub OAuth app at <https://github.com/settings/developers> → **New OAuth App**:
+   - Homepage URL: `https://your-domain`
+   - Authorization callback URL: `https://your-domain/auth/callback`
+2. Set these environment variables:
+
+   | Variable | Value |
+   |---|---|
+   | `EARLYSTAR_GITHUB_CLIENT_ID` / `EARLYSTAR_GITHUB_CLIENT_SECRET` | from the OAuth app |
+   | `EARLYSTAR_BASE_URL` | `https://your-domain` (https turns on Secure cookies) |
+   | `EARLYSTAR_ADMINS` | comma-separated GitHub logins |
+   | `GITHUB_TOKEN` | a token with no scopes, for the collector's rate limits |
+   | `EARLYSTAR_DATA_DIR` | a **persistent volume** path, e.g. `/data` |
+
+3. Run `python3 server.py --public` (binds `0.0.0.0:$PORT`), or use the Dockerfile:
+
+   ```bash
+   docker build -t earlystar .
+   docker run -p 8765:8765 -v earlystar-data:/data --env-file .env earlystar
+   ```
+
+   This works on Fly.io, Render, Railway or any small VPS. **Use a persistent volume.** The app database holds every account and balance.
+
+`--public` restricts the old single-user endpoints (`/api/token`, `/api/collect`, `POST /api/watch`) to admins, requires sign-in for `/api/stargains`, and hides internal error text.
+
+## Architecture
+
+```
+collector.py   GitHub Trending + search → data/radar.db (public, rebuildable). Also refreshes repos with open calls
+markets.py     schema, LMSR pricing, trading, creation, settlement, auto-generation, scoring
+auth.py        GitHub OAuth (no scopes), dev login, hashed cookie sessions
+server.py      JSON API, static index, collector thread, market service thread
+index.html     single-file UI, no build step
+tests/         python3 -m unittest discover -s tests -t .
+```
+
+- **Two databases.** `data/radar.db` is public and the GitHub Action pushes it to the `data` branch for the static Pages mirror. `data/earlystar.db` holds users, sessions, markets, trades and the ledger, and **must stay private**. An old `data/reporadar.db` is renamed to `radar.db` automatically.
+- **Ledger invariant.** Every balance change is a ledger row, and the tests check that `users.balance == SUM(ledger.delta)`.
+- **Static mirror.** The GitHub Pages site (`export_static.py`) still serves the read-only radar. Calls need the server.
+
+See [`PLAN.md`](PLAN.md) for the full design: pricing math, scoring and the security model.
 
 ## License
 

@@ -29,8 +29,10 @@ jobs:
         run: |
           mkdir -p data
           if git fetch --depth 1 origin data:refs/remotes/origin/data; then
-            git show origin/data:reporadar.db > data/reporadar.db
-            echo "Restored $(du -h data/reporadar.db | cut -f1) database"
+            # radar.db since EarlyStar; reporadar.db on older data branches
+            git show origin/data:radar.db > data/radar.db 2>/dev/null \
+              || git show origin/data:reporadar.db > data/radar.db
+            echo "Restored $(du -h data/radar.db | cut -f1) database"
           else
             echo "No data branch yet, starting a fresh history"
           fi
@@ -45,10 +47,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           workdir=$(mktemp -d)
-          cp data/reporadar.db "$workdir/"
+          # Only the public radar history is published. Never data/earlystar.db (accounts, balances).
+          cp data/radar.db "$workdir/"
           cd "$workdir"
           git init -q -b data
-          git add reporadar.db
+          git add radar.db
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -q -m "History snapshot $(date -u +%Y-%m-%dT%H:%MZ)"

@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EarlyStar">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="description" content="Find GitHub repos before they trend: real star gains, activity and a GitHub Trending archive.">
+<meta name="description" content="Find GitHub repos before they trend, then call it: real star gains, activity, a Trending archive and play-money calls that settle themselves.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%236366f1%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%2306b6d4%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%278%27%20fill%3D%27url%28%23g%29%27/%3E%3Cpath%20d%3D%27M14.5%209.2l2.1%204.3%204.7.7-3.4%203.3.8%204.7-4.2-2.2-4.2%202.2.8-4.7-3.4-3.3%204.7-.7z%27%20fill%3D%27%23fff%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -291,6 +291,128 @@
   .server-only { display: none !important; }
   body.server .server-only { display: revert !important; }
   body.server .nav .server-only { display: inline-flex !important; }
+  body.static .market-only, body.static .nav .market-only { display: none !important; }
+
+  /* ---------- EarlyStar ---------- */
+  .search { width: 220px; }
+  .acct { display: flex; align-items: center; gap: 6px; }
+  .acct .bal { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border);
+               background: var(--surface); font-weight: 650; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
+  .acct .bal svg { color: #f59e0b; fill: #f59e0b; }
+  .acct img { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; object-fit: cover; }
+  .mtoolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .mtoolbar .grow { flex: 1; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; flex-wrap: wrap; }
+  .seg button { border: 0; background: none; height: 28px; padding: 0 11px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--border), var(--shadow-sm); }
+  .mrow { display: grid; grid-template-columns: 40px minmax(0, 1fr) 104px; gap: 0 14px; align-items: center; padding: 14px 18px;
+          border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+  .mrow:last-child { border-bottom: 0; }
+  .mrow:hover { background: color-mix(in srgb, var(--surface-2) 60%, var(--surface)); }
+  .mrow .q { font-weight: 600; font-size: 14.5px; letter-spacing: -.01em; margin-bottom: 6px; line-height: 1.35; }
+  .odds { text-align: right; }
+  .prob { font-size: 22px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .chg { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 16px; }
+  .chg.up, .pos { color: var(--good); }
+  .chg.down, .neg { color: var(--bad); }
+  .pbar { height: 4px; background: color-mix(in srgb, var(--bad) 25%, var(--surface-3)); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .pbar i { display: block; height: 100%; background: var(--good); border-radius: 99px; }
+  .progress { display: inline-flex; align-items: center; gap: 6px; }
+  .progress .track { width: 64px; height: 5px; background: var(--surface-3); border-radius: 99px; overflow: hidden; display: inline-block; }
+  .progress .track i { display: block; height: 100%; background: #f59e0b; border-radius: 99px; }
+  .badge-out { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 7px; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+  .badge-out.yes { background: var(--good-soft); color: var(--good); }
+  .badge-out.no { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
+  .badge-out.void, .badge-out.review { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .tag-call { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; cursor: pointer; }
+  .mhero { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .bigprob { font-size: 46px; font-weight: 750; letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .mstats { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 20px; font-size: 12px; color: var(--muted); text-align: right; }
+  .mstats b { display: block; color: var(--text); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .banner { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 13.5px; border: 1px solid var(--border); background: var(--surface); }
+  .banner.yes { background: var(--good-soft); border-color: transparent; }
+  .banner.no { background: color-mix(in srgb, var(--bad) 10%, transparent); border-color: transparent; }
+  .tradebox { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+              display: flex; flex-direction: column; gap: 10px; }
+  .sides { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .side { height: 46px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 700; cursor: pointer; font-size: 14px; }
+  .side b { font-weight: 600; margin-left: 6px; opacity: .85; }
+  .side.yes.on { background: var(--good); border-color: var(--good); color: #fff; }
+  .side.no.on { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .amount { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; height: 46px; }
+  .amount span { color: var(--muted); font-size: 13px; }
+  .amount input { border: 0; background: transparent; outline: none; text-align: right; font-size: 18px; font-weight: 650; width: 50%; color: var(--text); }
+  .amount:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+  .quick { display: flex; gap: 6px; flex-wrap: wrap; }
+  .preview { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-size: 13px; min-height: 40px; }
+  .preview > div { display: flex; justify-content: space-between; gap: 8px; }
+  .preview span { color: var(--muted); }
+  .btn.wide { width: 100%; justify-content: center; height: 42px; font-size: 14px; }
+  .small { font-size: 12px; }
+  .error-text { color: var(--bad); }
+  .trade-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .rules { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-2); }
+  .rules li { margin: 5px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .feed { display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; margin-top: 8px; }
+  .feed .row { display: flex; align-items: center; gap: 8px; }
+  .feed img { width: 22px; height: 22px; border-radius: 6px; flex: none; }
+  .feed .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-link { cursor: pointer; font-weight: 600; color: var(--text); }
+  .user-link:hover { color: var(--accent-text); }
+  table.lb { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  table.lb th, table.lb td { padding: 11px 16px; border-bottom: 1px solid var(--border); text-align: right; }
+  table.lb th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+  table.lb th:nth-child(2), table.lb td:nth-child(2) { text-align: left; }
+  table.lb tbody tr { cursor: pointer; }
+  table.lb tbody tr:hover { background: var(--surface-2); }
+  table.lb tbody tr:last-child td { border-bottom: 0; }
+  table.lb .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  table.lb .who img { width: 28px; height: 28px; border-radius: 7px; flex: none; }
+  table.lb .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kpis4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border);
+           border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+  .box-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .mini-call { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border);
+               cursor: pointer; font-size: 13px; color: var(--text); }
+  .mini-call:hover span { color: var(--accent-text); }
+  .how { padding-left: 18px; margin: 0; font-size: 13px; color: var(--text-2); }
+  .how li { margin: 6px 0; }
+  .mfield { display: block; }
+  .mfield > span { display: block; font-size: 12.5px; color: var(--muted); }
+  .modal .inner.wide { width: min(560px, 94vw); }
+  .modal .seg { margin-bottom: 12px; }
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
+  .day-grid div { border: 1px solid var(--border); border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 11.5px; color: var(--muted); }
+  .day-grid div b { display: block; font-size: 15px; color: var(--text); }
+  .day-grid .hit { background: var(--good-soft); border-color: transparent; color: var(--good); }
+  .day-grid .hit b { color: var(--good); }
+  .day-grid .miss b { color: var(--bad); }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .cta-box { padding: 48px 24px; text-align: center; }
+  .cta-box h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: -.02em; }
+  .cta-box p { color: var(--muted); margin: 0 0 16px; }
+  body.mview .toolbar, body.mview aside.radar-aside { display: none !important; }
+  body:not(.mview) #marketAside { display: none !important; }
+  @media (max-width: 1280px) { .search kbd { display: none; } .search { width: 170px; } }
+  /* Many tabs + account controls: below 1560px show icons only, except the active tab. */
+  @media (max-width: 1560px) { body.server:not(.static) .nav button:not(.active) .lbl { display: none; } body.server:not(.static) .nav button { padding: 0 9px; } }
+  body.mview #exportBtn, body.mview #tokenBtn { display: none; }
+  @media (max-width: 720px) {
+    .mrow { grid-template-columns: 40px minmax(0, 1fr); }
+    .mrow .odds { grid-column: 2; text-align: left; display: flex; gap: 10px; align-items: baseline; padding-top: 6px; }
+    .pbar { display: none; }
+    .two-col, .preview { grid-template-columns: 1fr; }
+    .kpis4 { grid-template-columns: 1fr 1fr; }
+    .mstats { grid-template-columns: repeat(2, auto); }
+    .acct .bal span { display: none; }
+    .top-inner { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 6px; row-gap: 6px; }
+    .nav { order: 3; width: 100%; justify-content: space-between; }
+    .nav button .lbl { display: none; }
+    .nav button { padding: 0 10px; }
+  }
 </style>
 </head>
 <body>
@@ -298,7 +420,7 @@
   <div class="top-inner">
     <div class="brand">
       <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-        <defs><linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+        <defs><linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs>
         <rect width="32" height="32" rx="8" fill="url(#brandGradient)"/>
         <path d="M14.5 9.2l2.1 4.3 4.7.7-3.4 3.3.8 4.7-4.2-2.2-4.2 2.2.8-4.7-3.4-3.3 4.7-.7z" fill="#fff"/>
         <path d="M23.5 6.5v3.2M21.9 8.1h3.2" stroke="#fff" stroke-opacity=".85" stroke-width="1.5" stroke-linecap="round"/>
@@ -307,17 +429,21 @@
       EarlyStar
     </div>
     <nav class="nav" id="modeTabs" aria-label="Views">
-      <button data-mode="movers" class="server-only" title="Biggest real star gains, from EarlyStar's own history"><i data-icon="trending"></i>Movers</button>
-      <button data-mode="rising" title="New repositories ranked by star velocity"><i data-icon="sparkles"></i>Rising</button>
-      <button data-mode="established" title="Popular repositories with recent activity"><i data-icon="activity"></i>Established</button>
-      <button data-mode="trending" class="server-only" title="Day-by-day archive of GitHub Trending"><i data-icon="calendar"></i>Trending</button>
-      <button data-mode="watch" title="Your bookmarked repositories"><i data-icon="bookmark"></i>Watchlist</button>
+      <button data-mode="calls" class="server-only market-only" title="Play-money calls on repos"><i data-icon="target"></i><span class="lbl">Calls</span></button>
+      <button data-mode="movers" class="server-only" title="Biggest real star gains, from EarlyStar's own history"><i data-icon="trending"></i><span class="lbl">Movers</span></button>
+      <button data-mode="rising" title="New repositories ranked by star velocity"><i data-icon="sparkles"></i><span class="lbl">Rising</span></button>
+      <button data-mode="established" title="Popular repositories with recent activity"><i data-icon="activity"></i><span class="lbl">Established</span></button>
+      <button data-mode="trending" class="server-only" title="Day-by-day archive of GitHub Trending"><i data-icon="calendar"></i><span class="lbl">Trending</span></button>
+      <button data-mode="watch" title="Your bookmarked repositories"><i data-icon="bookmark"></i><span class="lbl">Watchlist</span></button>
+      <button data-mode="leaderboard" class="server-only market-only" title="Best callers"><i data-icon="trophy"></i><span class="lbl">Leaderboard</span></button>
+      <button data-mode="portfolio" class="server-only market-only" title="Your positions and points"><i data-icon="wallet"></i><span class="lbl">Portfolio</span></button>
     </nav>
     <div class="top-actions">
       <label class="search"><i data-icon="search"></i><input id="q" placeholder="Filter repositories…" autocomplete="off"><kbd>/</kbd></label>
       <button class="ghost-icon" id="exportBtn" title="Export current list as CSV" aria-label="Export CSV"><i data-icon="download"></i></button>
       <button class="ghost-icon" id="tokenBtn" title="GitHub token (higher rate limits)" aria-label="GitHub token"><i data-icon="key"></i></button>
       <button class="ghost-icon" id="installBtn" title="Install EarlyStar as an app" aria-label="Install app" style="display:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 7v7m-3-3 3 3 3-3M10 18h4"/></svg></button>
+      <div class="server-only market-only"><div class="acct" id="account"></div></div>
       <button class="ghost-icon" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme"><i data-icon="moon" data-class="i-moon"></i><i data-icon="sun" data-class="i-sun"></i></button>
     </div>
   </div>
@@ -355,7 +481,7 @@
     </div>
     <div class="list" id="list"></div>
   </section>
-  <aside>
+  <aside class="radar-aside">
     <div class="box"><h3>Overview</h3><div id="kpis"></div></div>
     <div class="box"><h3>Languages</h3><div id="langChart"></div></div>
     <div class="box"><h3>Topics</h3><div class="cloud" id="topicCloud"></div></div>
@@ -371,6 +497,7 @@
       </div>
     </div>
   </aside>
+  <aside id="marketAside"></aside>
 </main>
 
 <div class="drawer-bg" id="drawerBg"></div>
@@ -388,6 +515,39 @@
       <button class="btn" id="tokenClear">Remove</button>
       <button class="btn" id="tokenCancel">Cancel</button>
       <button class="btn primary" id="tokenSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="callModal">
+  <div class="inner wide">
+    <h3 style="margin-top:0">New call</h3>
+    <div class="seg" id="callKind">
+      <button data-kind="stars_reach" class="on">Star target</button>
+      <button data-kind="versus">Versus</button>
+    </div>
+    <label class="mfield"><span>Repository</span><input id="callRepo" placeholder="owner/name or a GitHub URL" autocomplete="off"></label>
+    <div id="callRepoInfo" class="muted small" style="margin:-8px 0 12px"></div>
+    <div id="callStarsFields"><label class="mfield"><span>Reaches this many stars</span><input id="callTarget" type="number" min="1" step="1"></label></div>
+    <div id="callVersusFields" hidden><label class="mfield"><span>…gains more stars than</span><input id="callRepoB" placeholder="owner/name" autocomplete="off"></label></div>
+    <label class="mfield"><span>Deadline (days from today, UTC)</span><input id="callDays" type="number" min="3" max="180" value="30"></label>
+    <div id="callPreview" class="small" style="margin:-6px 0 10px"></div>
+    <p class="muted small">Creating a call costs 50 points (anti-spam). Opening odds come from EarlyStar's momentum model — then the market takes over.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" id="callCancel">Cancel</button>
+      <button class="btn primary" id="callCreate">Create call</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="signinModal">
+  <div class="inner">
+    <h3 style="margin-top:0">Sign in (local dev mode)</h3>
+    <p class="muted">This server runs with <code>--dev-login</code>: pick any GitHub-style username. On a real deployment this signs in with GitHub.</p>
+    <input id="devLogin" placeholder="username" autocomplete="off">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" id="devCancel">Cancel</button>
+      <button class="btn primary" id="devGo">Sign in</button>
     </div>
   </div>
 </div>
@@ -415,6 +575,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 const MAX_SNAPSHOTS_PER_REPO = 40;
 const MAX_TRACKED_REPOS = 3000;
 const SERVER_MODES = ["movers", "trending"];
+const MARKET_MODES = ["calls", "leaderboard", "portfolio"];  // EarlyStar views (need server.py)
 const WINDOW_OPTIONS = {
   search: [["1", "24 hours"], ["7", "7 days"], ["30", "30 days"], ["90", "90 days"], ["365", "1 year"]],
   movers: [["24h", "24 hours"], ["7d", "7 days"], ["30d", "30 days"]],
@@ -451,7 +612,12 @@ const ICON_PATHS = {
   database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   commit: '<circle cx="12" cy="12" r="3"/><path d="M3 12h6M15 12h6"/>',
-  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'
 };
 
 function icon(name, extraClass = "") {
@@ -500,7 +666,8 @@ function pruneHistory(aggressive) {
 }
 
 /* ---------- app state (mirrored to the URL hash so views are shareable) ---------- */
-const defaults = { mode: "rising", window: "7", mwin: "24h", since: "daily", day: "", lang: "", topic: "", minStars: "20", sort: "momentum", hideSeen: false, onlyNew: false };
+const defaults = { mode: "rising", window: "7", mwin: "24h", since: "daily", day: "", lang: "", topic: "", minStars: "20", sort: "momentum", hideSeen: false, onlyNew: false,
+  cstatus: "open", csort: "volume", ckind: "", lperiod: "all", market: "" };
 const state = { ...defaults, ...parseHash() };
 // Deep link: #repo=owner/name opens that repo's details once the list has loaded.
 let pendingRepo = new URLSearchParams(location.hash.slice(1)).get("repo");
@@ -549,7 +716,7 @@ async function api(path, options = {}) {
   const response = await fetch(path, {
     cache: "no-store",
     ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+    headers: { "Content-Type": "application/json", "X-EarlyStar": "1", ...(options.headers || {}) }
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -572,6 +739,7 @@ async function refreshHealth() {
   if (previousFinish && finished && finished !== previousFinish && SERVER_MODES.includes(state.mode)) {
     toast("New data collected — press r to refresh");
   }
+  if (MARKET_MODES.includes(state.mode)) return;
   renderStatus(visibleRepos());
 }
 
@@ -853,6 +1021,8 @@ let loadToken = 0;
 async function load(forceRefresh = false) {
   const myToken = ++loadToken;
   writeHash();
+  if (MARKET_MODES.includes(state.mode)) return loadMarketView(myToken);
+  document.body.classList.remove("mview");
   syncControls();
   $("#list").innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton"></div>').join("");
   try {
@@ -928,6 +1098,10 @@ function visibleRepos() {
 }
 
 function render() {
+  if (MARKET_MODES.includes(state.mode)) {
+    if (state.mode === "calls") renderCalls();
+    return;
+  }
   const list = visibleRepos();
   focusIndex = Math.min(focusIndex, list.length - 1);
   renderStatus(list);
@@ -956,7 +1130,9 @@ function cardHtml(repo, index) {
     ? "Stars per day over the measured period"
     : state.mode === "rising" || repo.observedVelocity === null ? "Stars per day (lifetime)" : "Stars per day (observed)";
   const showVisitDelta = repo.visitDelta > 0 && state.mode !== "established" && !SERVER_MODES.includes(state.mode);
+  const calls = canTrade() ? (oddsMap[repo.full_name.toLowerCase()] || []) : [];
   const tags = [
+    calls.length ? `<span class="tag tag-call" data-market="${calls[0].id}" title="${escapeHtml(calls[0].question)}${calls.length > 1 ? ` (+${calls.length - 1} more)` : ""}">${icon("target")}${pct(calls[0].prob)}${calls[0].kind === "stars_reach" ? " → " + formatNumber(calls[0].target) + "★" : ""}</span>` : "",
     hot ? `<span class="tag tag-hot" title="Momentum ${repo.momentum}/100">${icon("flame")}Hot</span>` : "",
     repo.trending_streak >= 2
       ? `<span class="tag tag-hot" title="Consecutive days on GitHub Trending">${repo.trending_streak}-day streak</span>` : "",
@@ -983,6 +1159,7 @@ function cardHtml(repo, index) {
           <button class="icon-btn" data-act="seen" title="${isSeen ? "Mark as unseen" : "Mark as seen"} (s)">${icon(isSeen ? "eyeOff" : "eye")}</button>
           <button class="icon-btn ${compareSet.has(repo.id) ? "on" : ""}" data-act="compare" title="Compare (c)">${icon("compare")}</button>
           <button class="icon-btn" data-act="details" title="Details &amp; README (Enter)">${icon("panel")}</button>
+          ${canTrade() ? `<button class="icon-btn" data-act="call" title="Make a call on this repo">${icon("target")}</button>` : ""}
         </div>
       </div>
       <p class="desc ${repo.description ? "" : "none"}" title="${escapeHtml(repo.description || "")}">${escapeHtml(repo.description || "No description provided")}</p>
@@ -1179,6 +1356,7 @@ async function openDetails(repo) {
         ? `<div class="kpi"><div class="v">${repo.trending_days ?? 0}</div><div class="k">days on Trending</div></div>`
         : `<div class="kpi"><div class="v">${series.length}</div><div class="k">your snapshots</div></div>`}
     </div>
+    ${canTrade() ? '<div id="repoCalls" class="chart muted">Loading calls…</div>' : ""}
     ${serverMode ? '<div id="historyBox" class="chart muted">Loading star history…</div>' : ""}
     <div id="langBreakdown" class="muted" style="margin-bottom:14px">Loading language breakdown…</div>
     <div id="readme" class="muted">Loading README…</div>`;
@@ -1186,15 +1364,21 @@ async function openDetails(repo) {
 
   const [owner, name] = repo.full_name.split("/");
   if (serverMode) loadServerHistory(repo);
+  if (canTrade()) loadRepoCalls(repo);
+  const langBox = $("#langBreakdown");
+  const readmeBox = $("#readme");
   gh(`/repos/${owner}/${name}/languages`).then((languages) => {
+    if (!langBox.isConnected) return;
     const total = Object.values(languages).reduce((a, b) => a + b, 0) || 1;
     const entries = Object.entries(languages).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    $("#langBreakdown").innerHTML = `
+    langBox.innerHTML = `
       <div style="display:flex;height:8px;border-radius:99px;overflow:hidden;margin-bottom:6px">
         ${entries.map(([lang, bytes]) => `<i style="width:${(bytes / total) * 100}%;background:${LANG_COLORS[lang] || "#8b93a7"}"></i>`).join("")}
       </div>
       ${entries.map(([lang, bytes]) => `<span style="margin-right:12px;font-size:12px"><i class="lang-dot" style="background:${LANG_COLORS[lang] || "#8b93a7"}"></i>${escapeHtml(lang)} ${((bytes / total) * 100).toFixed(1)}%</span>`).join("")}`;
-  }).catch(() => ($("#langBreakdown").textContent = ""));
+  }).catch(() => {
+    if (langBox.isConnected) langBox.textContent = "";
+  });
 
   try {
     const html = await gh(`/repos/${owner}/${name}/readme`, { accept: "application/vnd.github.html" });
@@ -1202,15 +1386,20 @@ async function openDetails(repo) {
     frame.setAttribute("sandbox", "allow-popups allow-popups-to-escape-sandbox");
     frame.srcdoc = `<base href="${escapeHtml(repo.html_url)}/blob/HEAD/" target="_blank">
       <style>body{font:14px/1.6 system-ui,sans-serif;padding:16px 22px;color:#1f2328;max-width:100%}img{max-width:100%}pre{background:#f6f8fa;padding:12px;border-radius:8px;overflow:auto}code{font-family:ui-monospace,monospace}table{border-collapse:collapse}td,th{border:1px solid #d0d7de;padding:4px 8px}a{color:#0969da}</style>${html}`;
-    $("#readme").replaceChildren(frame);
+    if (readmeBox.isConnected) readmeBox.replaceChildren(frame);
   } catch {
-    $("#readme").textContent = "README unavailable (none, or rate limit reached).";
+    if (readmeBox.isConnected) readmeBox.textContent = "README unavailable (none, or rate limit reached).";
   }
 }
 
 function closeDetails() {
   $("#drawer").classList.remove("open");
   $("#drawerBg").classList.remove("open");
+  openMarketId = null;
+  if (state.market) {
+    state.market = "";
+    writeHash();
+  }
 }
 
 async function loadServerHistory(repo) {
@@ -1620,6 +1809,7 @@ function init() {
   $("#drawerBg").onclick = closeDetails;
 
   $("#list").addEventListener("click", (event) => {
+    if (onMarketUiClick(event)) return;
     const chip = event.target.closest("[data-topic]");
     if (chip) {
       state.topic = chip.dataset.topic;
@@ -1633,6 +1823,7 @@ function init() {
     else if (action === "seen") markSeen(repo, !seen.has(repo.id));
     else if (action === "compare") toggleCompare(repo);
     else if (action === "details") return openDetails(repo);
+    else if (action === "call") return openCallModal({ repo: repo.full_name });
     else if (action === "open") markSeen(repo, true);
     else return;
     render();
@@ -1657,6 +1848,8 @@ function init() {
     if (event.key === "Escape") {
       closeDetails();
       $("#tokenModal").classList.remove("open");
+      $("#callModal").classList.remove("open");
+      $("#signinModal").classList.remove("open");
       document.activeElement.blur();
       return;
     }
@@ -1686,20 +1879,969 @@ function init() {
   window.addEventListener("hashchange", () => {
     Object.assign(state, defaults, parseHash());
     load();
+    if (canTrade() && state.market && Number(state.market) !== openMarketId) openMarket(Number(state.market));
   });
-  detectServer().then((isServer) => {
+  initEarlyStar();
+  detectServer().then(async (isServer) => {
     serverMode = isServer;
     document.body.classList.toggle("server", serverMode);
+    document.body.classList.toggle("static", dataMode === "static");
     if (!serverMode && SERVER_MODES.includes(state.mode)) state.mode = "rising";
+    if (!canTrade() && MARKET_MODES.includes(state.mode)) state.mode = serverMode ? "movers" : "rising";
     if (serverMode && !location.hash) {
-      state.mode = "movers";
+      state.mode = canTrade() ? "calls" : "movers";
       state.sort = "delta";
     }
     if (serverMode) {
       syncWatchToServer();
       setInterval(refreshHealth, 20000);
     }
+    if (canTrade()) {
+      setInterval(refreshOdds, 60000);
+      await Promise.all([refreshMe(), refreshOdds()]);
+    }
     load();
+    if (canTrade() && state.market) openMarket(Number(state.market));
+  });
+}
+
+/* ---------- EarlyStar: calls, leaderboard, portfolio ---------- */
+let me = null;            // /api/me payload
+let oddsMap = {};         // full_name (lower) -> open calls, for radar badges
+let marketItems = [];     // current Calls list
+let openMarketId = null;  // market shown in the drawer
+let currentMarket = null;
+let leaderboardCache = null;
+const trade = { side: "yes", action: "buy", amount: "50", quote: null, seq: 0 };
+const KIND_LABEL = { stars_reach: "Star target", versus: "Versus", trending_days: "Trending" };
+const STATUS_TABS = [["open", "Open"], ["closing", "Closing soon"], ["pending", "Settling"], ["settled", "Settled"], ["mine", "Mine"]];
+const RATE_SOURCES = {
+  "new-repo": "new repo, lifetime rate", "tracked-7d": "tracked 7 days", "tracked-short": "tracked < 7 days",
+  "github-trending": "GitHub Trending weekly", lifetime: "lifetime average", unknown: "unknown"
+};
+
+function canTrade() {
+  return dataMode === "server";
+}
+
+function pct(p) {
+  if (p === null || p === undefined) return "—";
+  const value = p * 100;
+  if (value > 0 && value < 1) return "<1%";
+  if (value > 99 && value < 100) return ">99%";
+  return Math.round(value) + "%";
+}
+
+function pts(n, digits) {
+  const value = Number(n) || 0;
+  const places = digits ?? (Math.abs(value) >= 100 ? 0 : 1);
+  return value.toLocaleString(undefined, { minimumFractionDigits: places, maximumFractionDigits: places });
+}
+
+function signedPts(n) {
+  return (n > 0.005 ? "+" : n < -0.005 ? "−" : "") + pts(Math.abs(n));
+}
+
+function pnlClass(n) {
+  return n > 0.005 ? "pos" : n < -0.005 ? "neg" : "";
+}
+
+function timeLeft(ts) {
+  const seconds = ts - Date.now() / 1000;
+  if (seconds <= 0) return "closed";
+  if (seconds < 3600) return Math.max(1, Math.round(seconds / 60)) + "m left";
+  if (seconds < 2 * 86400) return Math.round(seconds / 3600) + "h left";
+  return Math.round(seconds / 86400) + "d left";
+}
+
+function ago(ts) {
+  const seconds = Math.max(0, Date.now() / 1000 - ts);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return Math.round(seconds / 60) + "m ago";
+  return formatAge(seconds / 86400) + " ago";
+}
+
+function shortDate(ts) {
+  return new Date(ts * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function utcDeadline(ts) {
+  return new Date(ts * 1000).toISOString().slice(0, 16).replace("T", " ") + " UTC";
+}
+
+function avatarSrc(url, size = 80) {
+  if (!url) return "";
+  return url + (url.includes("?") ? "&" : "?") + "s=" + size;
+}
+
+function probColor(p) {
+  if (p >= 0.6) return "var(--good)";
+  if (p <= 0.4) return "var(--bad)";
+  return "var(--text)";
+}
+
+function statusBadge(m) {
+  if (m.status === "resolved") return `<span class="badge-out ${m.outcome}">${m.outcome.toUpperCase()}</span>`;
+  if (m.status === "void") return '<span class="badge-out void">VOID</span>';
+  if (m.status === "review") return '<span class="badge-out review">IN REVIEW</span>';
+  if (m.status === "closed") return '<span class="badge-out review">SETTLING</span>';
+  return "";
+}
+
+/* ---------- account ---------- */
+async function refreshMe() {
+  if (!canTrade()) return null;
+  try {
+    me = await api("/api/me");
+  } catch {
+    return me;
+  }
+  if (me.user?.bonus_credited) toast(`+${me.economy.daily_bonus} daily bonus points`);
+  renderAccount();
+  return me;
+}
+
+async function refreshOdds() {
+  if (!canTrade()) return;
+  try {
+    oddsMap = (await api("/api/odds")).items;
+  } catch {
+    // badges are optional
+  }
+}
+
+function renderAccount() {
+  const box = $("#account");
+  if (!box || !me) return;
+  if (me.user) {
+    box.innerHTML = `
+      <button class="bal" data-act="portfolio" title="Your points — open portfolio">${icon("star")}${pts(me.user.balance, 0)}<span class="muted" style="font-weight:500">pts</span></button>
+      <img src="${escapeHtml(avatarSrc(me.user.avatar_url, 68))}" alt="${escapeHtml(me.user.login)}" title="@${escapeHtml(me.user.login)} — your profile" data-user="${escapeHtml(me.user.login)}">
+      <button class="ghost-icon" data-act="signout" title="Sign out" aria-label="Sign out">${icon("logout")}</button>`;
+  } else {
+    box.innerHTML = `<button class="btn small primary" data-act="signin">${icon("user")}Sign in</button>`;
+  }
+}
+
+function signIn() {
+  if (!me) return toast("Still connecting — try again in a second.");
+  if (me.auth.github) {
+    location.href = "/auth/login?next=" + encodeURIComponent("/" + location.hash);
+    return;
+  }
+  if (me.auth.dev) {
+    $("#signinModal").classList.add("open");
+    setTimeout(() => $("#devLogin").focus(), 50);
+    return;
+  }
+  toast("Sign-in isn't configured on this server yet (see README).");
+}
+
+async function devSignIn() {
+  const login = $("#devLogin").value.trim();
+  if (!login) return;
+  try {
+    await api("/auth/dev", { method: "POST", body: JSON.stringify({ login }) });
+  } catch (error) {
+    toast(error.message);
+    return;
+  }
+  $("#signinModal").classList.remove("open");
+  await refreshMe();
+  toast(`Signed in as @${login} — you have ${pts(me.user.balance, 0)} points`);
+  afterAccountChange();
+}
+
+async function signOut() {
+  await api("/auth/logout", { method: "POST", body: "{}" }).catch(() => {});
+  await refreshMe();
+  toast("Signed out");
+  afterAccountChange();
+}
+
+function afterAccountChange() {
+  if (MARKET_MODES.includes(state.mode)) load();
+  if (openMarketId) openMarket(openMarketId, true);
+}
+
+/* ---------- shared click handling for EarlyStar UI ---------- */
+function onMarketUiClick(event) {
+  const target = event.target;
+  const market = target.closest("[data-market]");
+  if (market) {
+    event.preventDefault();
+    openMarket(Number(market.dataset.market));
+    return true;
+  }
+  const user = target.closest("[data-user]");
+  if (user) {
+    event.preventDefault();
+    openProfile(user.dataset.user);
+    return true;
+  }
+  const tab = target.closest("[data-cstatus]");
+  if (tab) {
+    state.cstatus = tab.dataset.cstatus;
+    load();
+    return true;
+  }
+  const period = target.closest("[data-lperiod]");
+  if (period) {
+    state.lperiod = period.dataset.lperiod;
+    load();
+    return true;
+  }
+  const action = target.closest("[data-act]")?.dataset.act;
+  const handlers = {
+    "new-call": () => openCallModal(),
+    signin: signIn,
+    signout: signOut,
+    portfolio: () => switchMode("portfolio"),
+    calls: () => switchMode("calls"),
+    "call-repo": () => openCallModal({ repo: target.closest("[data-repo]").dataset.repo })
+  };
+  if (action && handlers[action]) {
+    handlers[action]();
+    return true;
+  }
+  return false;
+}
+
+function switchMode(mode) {
+  state.mode = mode;
+  load();
+}
+
+/* ---------- views ---------- */
+async function loadMarketView(myToken) {
+  document.body.classList.add("mview");
+  document.querySelectorAll("#modeTabs button").forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
+  if (!$("#list").querySelector(".mrow, table.lb, .cta-box")) {
+    $("#list").innerHTML = Array.from({ length: 5 }, () => '<div class="skeleton"></div>').join("");
+  }
+  try {
+    if (state.mode === "calls") await loadCalls(myToken);
+    else if (state.mode === "leaderboard") await loadLeaderboard(myToken);
+    else await loadPortfolio(myToken);
+  } catch (error) {
+    if (myToken !== loadToken) return;
+    $("#list").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+function pageHead(iconName, title, subtitle, count, actions = "") {
+  return `
+    <div class="page-head">
+      <div>
+        <h1>${icon(iconName)}${title}${count !== null && count !== undefined ? `<span class="count">${count}</span>` : ""}</h1>
+        <p>${subtitle}</p>
+      </div>
+      <div class="page-meta">${actions}</div>
+    </div>`;
+}
+
+async function loadCalls(myToken) {
+  const params = new URLSearchParams({ sort: state.csort, limit: 200 });
+  if (state.cstatus === "mine") {
+    params.set("status", "all");
+    params.set("mine", "1");
+  } else {
+    params.set("status", state.cstatus);
+  }
+  if (state.ckind) params.set("kind", state.ckind);
+  const [data] = await Promise.all([api("/api/markets?" + params), refreshMe()]);
+  if (myToken !== undefined && myToken !== loadToken) return;
+  marketItems = data.items;
+  renderCalls();
+  renderMarketAside();
+}
+
+function renderCalls() {
+  const needle = $("#q").value.trim().toLowerCase();
+  const list = marketItems.filter((m) => !needle || m.question.toLowerCase().includes(needle));
+  const kindOptions = [["", "All types"], ["stars_reach", "Star targets"], ["versus", "Versus"], ["trending_days", "Trending"]]
+    .map(([value, label]) => `<option value="${value}" ${state.ckind === value ? "selected" : ""}>${label}</option>`).join("");
+  const sortOptions = [["volume", "Most traded"], ["closing", "Closing soonest"], ["new", "Newest"]]
+    .map(([value, label]) => `<option value="${value}" ${state.csort === value ? "selected" : ""}>${label}</option>`).join("");
+  $("#status").innerHTML = pageHead(
+    "target", "Calls",
+    "Play-money predictions on GitHub repos — settled automatically from EarlyStar's own star snapshots.",
+    list.length,
+    `<button class="btn small primary" data-act="new-call">${icon("sparkles")}New call</button>`
+  ) + `
+    <div class="mtoolbar">
+      <div class="seg">${STATUS_TABS.map(([value, label]) => `<button data-cstatus="${value}" class="${state.cstatus === value ? "on" : ""}">${label}</button>`).join("")}</div>
+      <span class="grow"></span>
+      <label class="field"><span>Type</span><select data-cfield="ckind">${kindOptions}</select></label>
+      <label class="field"><span>Sort</span><select data-cfield="csort">${sortOptions}</select></label>
+    </div>`;
+  if (!list.length) {
+    const hints = {
+      open: `No open calls yet. EarlyStar creates calls from the radar every 6 hours — or <a class="user-link" data-act="new-call">make the first one</a>.`,
+      closing: "Nothing closes in the next 3 days.",
+      pending: "No calls are waiting to settle.",
+      settled: "No calls have settled yet.",
+      mine: me?.user ? "You haven't traded or created any calls yet." : `<a class="user-link" data-act="signin">Sign in</a> to see your calls.`
+    };
+    $("#list").innerHTML = `<div class="empty">${needle ? "No calls match your search." : hints[state.cstatus]}</div>`;
+    return;
+  }
+  $("#list").innerHTML = list.map(marketRowHtml).join("");
+}
+
+function progressHtml(m) {
+  if (m.kind === "stars_reach" && m.stars_now !== null && m.stars_now !== undefined) {
+    const share = Math.max(0, Math.min(1, (m.stars_now - m.start_stars) / Math.max(m.target - m.start_stars, 1)));
+    return `<span class="progress" title="${formatNumber(m.start_stars)}★ at open → ${formatNumber(m.stars_now)}★ now → target ${formatNumber(m.target)}★"><span class="track"><i style="width:${(share * 100).toFixed(1)}%"></i></span>${formatNumber(m.stars_now)} / ${formatNumber(m.target)}★</span>`;
+  }
+  if (m.kind === "versus" && m.stars_now !== null && m.stars_now_b !== null) {
+    return `<span title="Stars gained since the call opened">${icon("star")}${signed(m.stars_now - m.start_stars)} vs ${signed(m.stars_now_b - m.start_stars_b)}</span>`;
+  }
+  if (m.kind === "trending_days") {
+    return `<span title="Days on GitHub Trending so far">${icon("trending")}${m.trending_days_so_far ?? 0} / ${m.target} days</span>`;
+  }
+  return "";
+}
+
+function marketRowHtml(m) {
+  const change = m.change_24h || 0;
+  const changeHtml = Math.abs(change) >= 0.005
+    ? `<div class="chg ${change > 0 ? "up" : "down"}" title="Change in the last 24 h">${change > 0 ? "▲" : "▼"} ${Math.round(Math.abs(change) * 100)}</div>`
+    : '<div class="chg">chance</div>';
+  const right = m.status === "open"
+    ? `<div class="prob" style="color:${probColor(m.prob)}">${pct(m.prob)}</div>${changeHtml}<div class="pbar"><i style="width:${(m.prob * 100).toFixed(1)}%"></i></div>`
+    : `${statusBadge(m)}<div class="chg">${m.resolved_ts ? shortDate(m.resolved_ts) : pct(m.prob)}</div>`;
+  const position = m.my_position;
+  const holding = position && (position.yes_shares > 0.01 || position.no_shares > 0.01)
+    ? `<span class="tag tag-up" title="Your shares">${position.yes_shares >= position.no_shares ? "YES " + pts(position.yes_shares, 0) : "NO " + pts(position.no_shares, 0)}</span>`
+    : "";
+  return `
+  <article class="mrow" data-market="${m.id}">
+    <img class="avatar" src="${escapeHtml(avatarSrc(m.avatar_url))}" alt="" loading="lazy">
+    <div class="body">
+      <div class="q">${escapeHtml(m.question)}</div>
+      <div class="meta">
+        <span class="tag">${KIND_LABEL[m.kind]}</span>${holding}
+        ${progressHtml(m)}
+        <span title="Points traded">${icon("activity")}${pts(m.volume, 0)} pts</span>
+        <span title="Traders">${icon("user")}${m.traders}</span>
+        <span title="Trading closes ${utcDeadline(m.close_ts)}">${icon("clock")}${m.status === "open" ? timeLeft(m.close_ts) : "closed " + shortDate(m.close_ts)}</span>
+        <span>${m.auto ? "auto call" : "by @" + escapeHtml(m.creator || "?")}</span>
+      </div>
+    </div>
+    <div class="odds">${right}</div>
+  </article>`;
+}
+
+function howItWorksBox() {
+  const economy = me?.economy || { starting_balance: 1000, daily_bonus: 25, max_stake: 500 };
+  return `<div class="box"><h3>How EarlyStar works</h3><ul class="how">
+    <li>Buy <b>YES</b> or <b>NO</b> with points. The price is the crowd's odds: 63% ≈ 0.63 points per YES share.</li>
+    <li>A winning share pays <b>1 point</b>. Calls settle themselves from EarlyStar's 30-minute GitHub snapshots — no human judge.</li>
+    <li>New accounts get ${pts(economy.starting_balance, 0)} points, plus ${pts(economy.daily_bonus, 0)} for each day you visit.</li>
+    <li>Max ${pts(economy.max_stake, 0)} points at risk per call. Owners can't trade their own repos.</li>
+    <li class="muted">Points are play money: no cash value, can't be bought, sold or withdrawn.</li>
+  </ul></div>`;
+}
+
+async function renderMarketAside() {
+  const youBox = me?.user
+    ? `<div class="box"><h3>You</h3>
+         <div class="riser" style="margin-top:0">
+           <img src="${escapeHtml(avatarSrc(me.user.avatar_url, 64))}" alt="">
+           <div style="min-width:0"><div class="k">Signed in</div><div class="n user-link" data-user="${escapeHtml(me.user.login)}">@${escapeHtml(me.user.login)}</div></div>
+           <div class="r">${pts(me.user.balance, 0)}<span>points</span></div>
+         </div>
+         ${me.user.trade_block_reason ? `<p class="small error-text">${escapeHtml(me.user.trade_block_reason)}</p>` : ""}
+         <div style="display:flex;gap:8px;margin-top:12px"><button class="btn small" data-act="portfolio">${icon("wallet")}Portfolio</button><button class="btn small primary" data-act="new-call">${icon("sparkles")}New call</button></div>
+       </div>`
+    : `<div class="box"><h3>Join EarlyStar</h3><p class="muted" style="margin:0 0 12px;font-size:13px">Sign in with GitHub to get ${pts(me?.economy?.starting_balance ?? 1000, 0)} free points and start calling repos.</p>
+         <button class="btn primary" data-act="signin">${icon("user")}Sign in</button></div>`;
+  $("#marketAside").innerHTML = youBox + howItWorksBox() + '<div class="box" id="topCallers"><h3>Top callers</h3><div class="muted small">Loading…</div></div>';
+  try {
+    if (!leaderboardCache || Date.now() - leaderboardCache.at > 60000) {
+      leaderboardCache = { at: Date.now(), data: await api("/api/leaderboard?period=all") };
+    }
+    const rows = leaderboardCache.data.items.slice(0, 5);
+    $("#topCallers").innerHTML = "<h3>Top callers</h3>" + (rows.length ? rows.map((row) => `
+      <div class="riser" data-user="${escapeHtml(row.login)}" style="cursor:pointer">
+        <img src="${escapeHtml(avatarSrc(row.avatar_url, 64))}" alt="">
+        <div style="min-width:0"><div class="k">#${row.rank}</div><div class="n">@${escapeHtml(row.login)}</div></div>
+        <div class="r ${pnlClass(row.profit)}" style="color:inherit">${signedPts(row.profit)}<span>profit</span></div>
+      </div>`).join("") : '<div class="muted small">No trades yet — be the first.</div>');
+  } catch {
+    $("#topCallers").innerHTML = "<h3>Top callers</h3><div class='muted small'>Unavailable.</div>";
+  }
+}
+
+async function loadLeaderboard(myToken) {
+  const [data] = await Promise.all([api("/api/leaderboard?period=" + state.lperiod), refreshMe()]);
+  if (myToken !== undefined && myToken !== loadToken) return;
+  leaderboardCache = state.lperiod === "all" ? { at: Date.now(), data } : leaderboardCache;
+  const key = state.lperiod === "all" ? "profit" : "profit_30d";
+  $("#status").innerHTML = pageHead("trophy", "Leaderboard", "Ranked by trading profit — skill, not bonuses. Creation fees don't count against you.", data.items.length) + `
+    <div class="mtoolbar"><div class="seg">
+      <button data-lperiod="all" class="${state.lperiod === "all" ? "on" : ""}">All time</button>
+      <button data-lperiod="30d" class="${state.lperiod === "30d" ? "on" : ""}">Last 30 days</button>
+    </div></div>`;
+  $("#list").innerHTML = data.items.length ? `
+    <table class="lb">
+      <thead><tr><th>#</th><th>Caller</th><th>Profit</th><th>Accuracy</th><th>Settled</th><th>Trades</th><th>Net worth</th></tr></thead>
+      <tbody>${data.items.map((row) => `
+        <tr data-user="${escapeHtml(row.login)}">
+          <td>${row.rank}</td>
+          <td><div class="who"><img src="${escapeHtml(avatarSrc(row.avatar_url, 56))}" alt=""><span>@${escapeHtml(row.login)}</span></div></td>
+          <td class="${pnlClass(row[key])}"><b>${signedPts(row[key])}</b></td>
+          <td>${row.accuracy === null ? "—" : Math.round(row.accuracy * 100) + "%"}</td>
+          <td>${row.settled}</td>
+          <td>${row.trades}</td>
+          <td>${pts(row.net_worth, 0)}</td>
+        </tr>`).join("")}</tbody>
+    </table>` : '<div class="empty">Nobody has traded yet. Make the first call!</div>';
+  const best = data.best_calls || [];
+  $("#marketAside").innerHTML = `
+    <div class="box"><h3>Best early calls</h3>${best.length ? `<div class="feed">${best.map((call) => `
+      <div class="row" data-market="${call.market_id}" style="cursor:pointer">
+        <img src="${escapeHtml(avatarSrc(call.avatar_url, 44))}" alt="">
+        <div class="grow"><b>@${escapeHtml(call.login)}</b> bought ${call.side.toUpperCase()} at ${pct(call.price)}<div class="muted" style="white-space:normal">${escapeHtml(call.question)}</div></div>
+      </div>`).join("")}</div>` : '<div class="muted small">Winning buys made at ≤ 30% odds show up here.</div>'}</div>
+    <div class="box"><h3>Scoring</h3><ul class="how">
+      <li><b>Profit</b> = balance + value of open positions − signup and daily bonuses (+ creation fees).</li>
+      <li><b>30 days</b> counts calls settled in the last 30 days.</li>
+      <li><b>Accuracy</b> = share of settled calls where you made money.</li>
+    </ul></div>`;
+}
+
+async function loadPortfolio(myToken) {
+  await refreshMe();
+  if (myToken !== undefined && myToken !== loadToken) return;
+  if (!me?.user) {
+    $("#status").innerHTML = pageHead("wallet", "Portfolio", "Your points, positions and history.", null);
+    $("#list").innerHTML = `<div class="cta-box"><h2>Sign in to start calling</h2><p>You'll get ${pts(me?.economy?.starting_balance ?? 1000, 0)} free points.</p><button class="btn primary" data-act="signin">${icon("user")}Sign in</button></div>`;
+    $("#marketAside").innerHTML = howItWorksBox();
+    return;
+  }
+  const data = await api("/api/portfolio");
+  if (myToken !== undefined && myToken !== loadToken) return;
+  const s = data.stats;
+  $("#status").innerHTML = pageHead("wallet", "Portfolio", `@${escapeHtml(s.login)} · ${s.markets} calls · ${s.trades} trades`, null,
+    `<button class="btn small" data-user="${escapeHtml(s.login)}">${icon("user")}Public profile</button>`) + `
+    <div class="kpis4">
+      <div class="kpi"><div class="v">${pts(s.balance, 0)}</div><div class="k">Balance (points)</div></div>
+      <div class="kpi"><div class="v">${pts(s.net_worth, 0)}</div><div class="k">Net worth</div></div>
+      <div class="kpi"><div class="v ${pnlClass(s.profit)}">${signedPts(s.profit)}</div><div class="k">Trading profit</div></div>
+      <div class="kpi"><div class="v">${s.accuracy === null ? "—" : Math.round(s.accuracy * 100) + "%"}</div><div class="k">Accuracy (${s.settled} settled)</div></div>
+    </div>`;
+  $("#list").innerHTML = data.positions.length ? `
+    <table class="lb">
+      <thead><tr><th></th><th>Call</th><th>Shares</th><th>Spent</th><th>Value</th><th>P&amp;L</th><th>Status</th></tr></thead>
+      <tbody>${data.positions.map(({ market, position, value, pnl }) => `
+        <tr data-market="${market.id}">
+          <td><img class="avatar" style="width:28px;height:28px;border-radius:7px" src="${escapeHtml(avatarSrc(market.avatar_url, 56))}" alt=""></td>
+          <td style="white-space:normal">${escapeHtml(market.question)}</td>
+          <td>${position.yes_shares > 0.01 ? `<span class="pos">YES ${pts(position.yes_shares, 1)}</span>` : ""}${position.yes_shares > 0.01 && position.no_shares > 0.01 ? "<br>" : ""}${position.no_shares > 0.01 ? `<span class="neg">NO ${pts(position.no_shares, 1)}</span>` : ""}${position.yes_shares <= 0.01 && position.no_shares <= 0.01 ? '<span class="muted">sold</span>' : ""}</td>
+          <td>${pts(position.spent - position.received)}</td>
+          <td>${pts(value)}</td>
+          <td class="${pnlClass(pnl)}"><b>${signedPts(pnl)}</b></td>
+          <td>${market.status === "open" ? pct(market.prob) : statusBadge(market)}</td>
+        </tr>`).join("")}</tbody>
+    </table>` : `<div class="empty">No positions yet. <a class="user-link" data-act="calls">Browse open calls</a> and make your first one.</div>`;
+  const kindLabels = { signup: "Welcome bonus", daily_bonus: "Daily bonus", buy: "Bought", sell: "Sold", payout: "Payout", refund: "Refund", clawback: "Clawback", create_fee: "Call fee", admin_grant: "Grant" };
+  $("#marketAside").innerHTML = `<div class="box"><h3>Activity</h3><div class="feed">${data.ledger.map((entry) => `
+    <div class="row" ${entry.market_id ? `data-market="${entry.market_id}" style="cursor:pointer"` : ""}>
+      <div class="grow" style="white-space:normal"><b>${kindLabels[entry.kind] || entry.kind}</b> <span class="muted">${ago(entry.ts)}</span>
+        ${entry.question ? `<div class="muted">${escapeHtml(entry.question)}</div>` : ""}</div>
+      <b class="${pnlClass(entry.delta)}">${signedPts(entry.delta)}</b>
+    </div>`).join("")}</div></div>`;
+}
+
+/* ---------- charts ---------- */
+function lineChart(seriesList, { min = null, max = null, format = formatNumber, target = null, targetLabel = "", step = false, height = 160, end = null } = {}) {
+  const all = seriesList.flatMap((series) => series.points);
+  if (!all.length) return '<div class="muted small">No data yet — the next collection adds a point.</div>';
+  const width = 640;
+  const pad = { l: 46, r: 12, t: 12, b: 22 };
+  const t0 = Math.min(...all.map((p) => p[0]));
+  const t1 = Math.max(end ?? 0, ...all.map((p) => p[0]), t0 + 1);
+  let lo = min ?? Math.min(...all.map((p) => p[1]), target ?? Infinity);
+  let hi = max ?? Math.max(...all.map((p) => p[1]), target ?? -Infinity);
+  if (hi - lo < 1e-9) {
+    hi += 1;
+    lo -= 1;
+  }
+  if (min === null) lo -= (hi - lo) * 0.06;
+  if (max === null) hi += (hi - lo) * 0.06;
+  const x = (t) => pad.l + ((t - t0) / (t1 - t0)) * (width - pad.l - pad.r);
+  const y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (height - pad.t - pad.b);
+  const grid = [lo, (lo + hi) / 2, hi].map((v) =>
+    `<line x1="${pad.l}" x2="${width - pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)"/><text x="${pad.l - 6}" y="${y(v) + 4}" text-anchor="end">${format(v)}</text>`
+  ).join("");
+  const dates = `<text x="${pad.l}" y="${height - 4}">${new Date(t0).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</text>
+    <text x="${width - pad.r}" y="${height - 4}" text-anchor="end">${new Date(t1).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</text>`;
+  const lines = seriesList.map((series) => {
+    if (!series.points.length) return "";
+    let d = "";
+    series.points.forEach(([t, v], index) => {
+      if (index === 0) d += `M${x(t).toFixed(1)},${y(v).toFixed(1)}`;
+      else if (step) d += `L${x(t).toFixed(1)},${y(series.points[index - 1][1]).toFixed(1)}L${x(t).toFixed(1)},${y(v).toFixed(1)}`;
+      else d += `L${x(t).toFixed(1)},${y(v).toFixed(1)}`;
+    });
+    const last = series.points[series.points.length - 1];
+    return `<path d="${d}" fill="none" stroke="${series.color}" stroke-width="2" stroke-linejoin="round"/><circle cx="${x(last[0])}" cy="${y(last[1])}" r="3.5" fill="${series.color}"/>`;
+  }).join("");
+  const targetLine = target !== null
+    ? `<line x1="${pad.l}" x2="${width - pad.r}" y1="${y(target)}" y2="${y(target)}" stroke="#f59e0b" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${width - pad.r}" y="${y(target) - 5}" text-anchor="end" style="fill:#f59e0b">${escapeHtml(targetLabel)}</text>`
+    : "";
+  return `<svg viewBox="0 0 ${width} ${height}" width="100%" preserveAspectRatio="none" style="display:block">${grid}${targetLine}${lines}${dates}</svg>`;
+}
+
+function progressChart(m) {
+  const closeMs = m.close_ts * 1000;
+  if (m.kind === "stars_reach") {
+    return `<b>Stars vs target</b>${lineChart([{ points: m.stars, color: "var(--accent)" }], { target: m.target, targetLabel: `target ${formatNumber(m.target)}★`, end: closeMs })}
+      <div class="legend"><span><i style="background:var(--accent)"></i>stars (EarlyStar snapshots)</span><span><i style="background:#f59e0b"></i>target by ${shortDate(m.close_ts - 1)}</span>${m.rate_per_day ? `<span>~${formatNumber(m.rate_per_day)}★/day recently</span>` : ""}</div>`;
+  }
+  if (m.kind === "versus") {
+    const openMs = m.open_ts * 1000;
+    const gains = (points, start) => points.filter((p) => p[0] >= openMs - 3600e3).map(([t, v]) => [t, v - start]);
+    return `<b>Stars gained since the call opened</b>${lineChart([
+      { points: gains(m.stars, m.start_stars), color: "var(--good)" },
+      { points: gains(m.stars_b, m.start_stars_b), color: "var(--bad)" }
+    ], { end: closeMs })}
+      <div class="legend"><span><i style="background:var(--good)"></i>${escapeHtml(m.repo)} (YES)</span><span><i style="background:var(--bad)"></i>${escapeHtml(m.repo_b)} (NO)</span></div>`;
+  }
+  const labels = { hit: "✓", miss: "✕", future: "·", nodata: "?" };
+  return `<b>Days on GitHub Trending — ${m.trending_days_so_far} of ${m.target} needed</b>
+    <div class="day-grid">${(m.trending_grid || []).map((cell) => `<div class="${cell.state}" title="${cell.day}: ${cell.state}"><b>${labels[cell.state]}</b>${cell.day.slice(5)}</div>`).join("")}</div>
+    <div class="legend"><span>✓ trending</span><span>✕ not trending</span><span>· upcoming</span><span>? not recorded</span></div>`;
+}
+
+/* ---------- market drawer ---------- */
+async function openMarket(id, keepTrade = false) {
+  if (!canTrade() || !id) return;
+  const switching = openMarketId !== id;
+  openMarketId = id;
+  if (state.market !== String(id)) {
+    state.market = String(id);
+    writeHash();
+  }
+  $("#drawer").classList.add("open");
+  $("#drawerBg").classList.add("open");
+  if (switching && !keepTrade) {
+    Object.assign(trade, { side: "yes", action: "buy", amount: "50", quote: null });
+    $("#dhead").innerHTML = `<div class="name" style="flex:1">Loading call…</div><button class="ghost-icon" id="closeDrawer" aria-label="Close">${icon("x")}</button>`;
+    $("#dbody").innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+    $("#closeDrawer").onclick = closeDetails;
+  }
+  let m;
+  try {
+    m = await api(`/api/markets/${id}`);
+  } catch (error) {
+    $("#dbody").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+    return;
+  }
+  if (openMarketId !== id) return;
+  currentMarket = m;
+  const ownerName = m.repo.split("/")[0];
+  $("#dhead").innerHTML = `
+    <img class="avatar" src="${escapeHtml(avatarSrc(m.avatar_url))}" alt="">
+    <div style="flex:1;min-width:0">
+      <div class="name" style="white-space:normal;line-height:1.3">${escapeHtml(m.question)}</div>
+      <div class="muted" style="font-size:12.5px">${KIND_LABEL[m.kind]} · ${m.auto ? "auto call" : `by <a class="user-link" data-user="${escapeHtml(m.creator || "")}">@${escapeHtml(m.creator || "?")}</a>`} · closes ${utcDeadline(m.close_ts)}</div>
+    </div>
+    <a class="btn small" href="https://github.com/${escapeHtml(m.repo)}" target="_blank" rel="noopener" title="${escapeHtml(ownerName)}">${icon("external")}GitHub</a>
+    <button class="ghost-icon" id="closeDrawer" aria-label="Close">${icon("x")}</button>`;
+  $("#closeDrawer").onclick = closeDetails;
+
+  let banner = "";
+  if (m.status === "resolved") banner = `<div class="banner ${m.outcome}"><b>Settled ${m.outcome.toUpperCase()}</b> · ${escapeHtml(m.resolution_note || "")}</div>`;
+  else if (m.status === "void") banner = `<div class="banner"><b>Voided — everyone was refunded.</b> ${escapeHtml(m.resolution_note || "")}</div>`;
+  else if (m.status === "review") banner = `<div class="banner"><b>In review.</b> ${escapeHtml(m.flag_note || "An admin will settle this call shortly.")}</div>`;
+  else if (m.status === "closed") banner = '<div class="banner"><b>Trading closed.</b> Settling on the next EarlyStar snapshot (usually within 30 minutes).</div>';
+
+  const position = m.my_position;
+  const positionBox = position && (position.yes_shares > 0.01 || position.no_shares > 0.01 || position.payout > 0) ? (() => {
+    const pnl = (m.status === "void" ? 0 : position.value + position.received - position.spent);
+    return `<div class="chart"><b>Your position</b>
+      <div class="kpis4" style="margin:10px 0 0">
+        <div class="kpi"><div class="v pos">${pts(position.yes_shares, 1)}</div><div class="k">YES shares</div></div>
+        <div class="kpi"><div class="v neg">${pts(position.no_shares, 1)}</div><div class="k">NO shares</div></div>
+        <div class="kpi"><div class="v">${pts(position.value)}</div><div class="k">${m.status === "resolved" ? "Paid out" : "Value now"}</div></div>
+        <div class="kpi"><div class="v ${pnlClass(pnl)}">${signedPts(pnl)}</div><div class="k">P&amp;L</div></div>
+      </div></div>`;
+  })() : "";
+
+  const tradesHtml = m.trades.length ? m.trades.map((t) => `
+    <div class="row"><img src="${escapeHtml(avatarSrc(t.avatar_url, 44))}" alt="">
+      <div class="grow"><a class="user-link" data-user="${escapeHtml(t.login)}">@${escapeHtml(t.login)}</a> ${t.action === "buy" ? "bought" : "sold"} <b class="${t.side === "yes" ? "pos" : "neg"}">${pts(t.shares, 1)} ${t.side.toUpperCase()}</b> · ${pts(t.points)} pts</div>
+      <span class="muted">${pct(t.prob_after)} · ${ago(t.ts)}</span></div>`).join("") : '<div class="muted small">No trades yet — set the price.</div>';
+  const holdersHtml = (side) => m.holders[side].length
+    ? m.holders[side].map((h) => `<div class="row"><img src="${escapeHtml(avatarSrc(h.avatar_url, 44))}" alt=""><div class="grow"><a class="user-link" data-user="${escapeHtml(h.login)}">@${escapeHtml(h.login)}</a></div><b>${pts(h.shares, 0)}</b></div>`).join("")
+    : '<div class="muted small">—</div>';
+
+  $("#dbody").innerHTML = `
+    <div class="mhero">
+      <div>
+        <div class="bigprob" style="color:${m.status === "open" || m.status === "closed" ? probColor(m.prob) : "var(--text)"}">${m.status === "resolved" ? m.outcome.toUpperCase() : m.status === "void" ? "VOID" : pct(m.prob)}</div>
+        <div class="muted">${m.status === "resolved" || m.status === "void" ? "final outcome" : "chance of YES"}${Math.abs(m.change_24h) >= 0.005 ? ` · <span class="${m.change_24h > 0 ? "pos" : "neg"}">${m.change_24h > 0 ? "▲" : "▼"} ${Math.round(Math.abs(m.change_24h) * 100)} pts today</span>` : ""}</div>
+      </div>
+      <div class="mstats">
+        <div><b>${pts(m.volume, 0)}</b>volume</div>
+        <div><b>${m.traders}</b>traders</div>
+        <div><b>${m.status === "open" ? timeLeft(m.close_ts) : shortDate(m.close_ts)}</b>${m.status === "open" ? "to go" : "closed"}</div>
+        <div><b>${pct(m.initial_prob)}</b>opening odds</div>
+      </div>
+    </div>
+    ${banner}
+    <div class="tradebox" id="tradeBox"></div>
+    ${positionBox}
+    <div class="chart"><b>Odds over time</b>${lineChart([{ points: m.history, color: "var(--accent)" }], { min: 0, max: 1, format: (v) => Math.round(v * 100) + "%", step: true, height: 140 })}</div>
+    <div class="chart">${progressChart(m)}</div>
+    <div class="chart"><b>How this call settles</b><ul class="rules">${m.rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("")}</ul></div>
+    <div class="two-col">
+      <div class="chart"><b>Recent trades</b><div class="feed">${tradesHtml}</div></div>
+      <div class="chart"><b>Top holders</b>
+        <div class="small pos" style="margin-top:8px;font-weight:600">YES</div><div class="feed" style="margin-top:4px">${holdersHtml("yes")}</div>
+        <div class="small neg" style="margin-top:10px;font-weight:600">NO</div><div class="feed" style="margin-top:4px">${holdersHtml("no")}</div>
+      </div>
+    </div>`;
+  renderTradeBox();
+}
+
+function renderTradeBox() {
+  const m = currentMarket;
+  const box = $("#tradeBox");
+  if (!box || !m) return;
+  if (m.status !== "open") {
+    box.style.display = "none";
+    return;
+  }
+  box.style.display = "";
+  if (!me?.user) {
+    box.innerHTML = `<div class="trade-cta"><div><b>Make your call</b><div class="muted small">Sign in to get ${pts(me?.economy?.starting_balance ?? 1000, 0)} free points.</div></div><button class="btn primary" data-act="signin">${icon("user")}Sign in</button></div>`;
+    return;
+  }
+  if (me.user.trade_block_reason) {
+    box.innerHTML = `<div class="small error-text">${escapeHtml(me.user.trade_block_reason)}</div>`;
+    return;
+  }
+  const held = m.my_position ? m.my_position[trade.side + "_shares"] : 0;
+  const holdsAny = m.my_position && (m.my_position.yes_shares > 0.01 || m.my_position.no_shares > 0.01);
+  if (trade.action === "sell" && !holdsAny) {
+    box.innerHTML = `<div class="trade-cta"><div><b>Nothing to sell yet</b><div class="muted small">You don't hold YES or NO shares in this call.</div></div><button class="btn" data-trade-action="buy">Buy instead</button></div>`;
+    return;
+  }
+  const quick = trade.action === "buy"
+    ? [10, 50, 100, 250].map((value) => `<button class="chip" data-quick="${value}">${value}</button>`).join("")
+    : [[0.25, "25%"], [0.5, "50%"], [1, "All"]].map(([value, label]) => `<button class="chip" data-quick-frac="${value}">${label}</button>`).join("");
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div class="seg">${["buy", "sell"].map((action) => `<button data-trade-action="${action}" class="${trade.action === action ? "on" : ""}">${action === "buy" ? "Buy" : "Sell"}</button>`).join("")}</div>
+      <span class="muted small">Balance <b style="color:var(--text)">${pts(me.user.balance)}</b> pts</span>
+    </div>
+    <div class="sides">
+      <button class="side yes ${trade.side === "yes" ? "on" : ""}" data-trade-side="yes">YES <b>${pct(m.prob)}</b></button>
+      <button class="side no ${trade.side === "no" ? "on" : ""}" data-trade-side="no">NO <b>${pct(1 - m.prob)}</b></button>
+    </div>
+    <label class="amount"><span>${trade.action === "buy" ? "Points to spend" : `Shares to sell (you hold ${pts(held, 2)})`}</span>
+      <input id="tradeAmount" type="number" min="0" step="any" inputmode="decimal" value="${escapeHtml(trade.amount)}"></label>
+    <div class="quick">${quick}</div>
+    <div class="preview" id="tradePreview"><span class="muted">Getting a quote…</span></div>
+    <button class="btn primary wide" id="tradeGo" disabled>${trade.action === "buy" ? "Buy" : "Sell"} ${trade.side.toUpperCase()}</button>
+    <div class="muted small">${trade.action === "buy" ? `You can put ${pts(m.stake_room)} more points at risk in this call.` : "Selling returns points at the current price."} Price moves as people trade.</div>`;
+  updateQuote();
+}
+
+let quoteTimer = null;
+function updateQuote() {
+  clearTimeout(quoteTimer);
+  quoteTimer = setTimeout(async () => {
+    const preview = $("#tradePreview");
+    const go = $("#tradeGo");
+    if (!preview || !currentMarket) return;
+    const amount = Number(trade.amount);
+    trade.quote = null;
+    if (!(amount > 0)) {
+      preview.innerHTML = '<span class="muted">Enter an amount.</span>';
+      go.disabled = true;
+      return;
+    }
+    const seq = ++trade.seq;
+    try {
+      const params = new URLSearchParams({ side: trade.side, action: trade.action, amount });
+      const q = await api(`/api/markets/${currentMarket.id}/quote?${params}`);
+      if (seq !== trade.seq) return;
+      trade.quote = q;
+      const side = trade.side.toUpperCase();
+      preview.innerHTML = trade.action === "buy"
+        ? `<div><span>Shares</span><b>${pts(q.shares, 2)}</b></div>
+           <div><span>Avg price</span><b>${q.avg_price.toFixed(3)}</b></div>
+           <div><span>Pays if ${side}</span><b class="pos">${pts(q.payout_if_win, 1)} (${signedPts(q.payout_if_win - amount)})</b></div>
+           <div><span>Odds after</span><b>${pct(q.prob_before)} → ${pct(q.prob_after)}</b></div>`
+        : `<div><span>You get</span><b>${pts(q.points, 2)} pts</b></div>
+           <div><span>Avg price</span><b>${(q.avg_price ?? 0).toFixed(3)}</b></div>
+           <div><span>Odds after</span><b>${pct(q.prob_before)} → ${pct(q.prob_after)}</b></div>`;
+      go.disabled = false;
+    } catch (error) {
+      if (seq !== trade.seq) return;
+      preview.innerHTML = `<span class="error-text">${escapeHtml(error.message)}</span>`;
+      go.disabled = true;
+    }
+  }, 160);
+}
+
+async function submitTrade() {
+  const q = trade.quote;
+  const go = $("#tradeGo");
+  if (!q || !currentMarket) return;
+  go.disabled = true;
+  go.textContent = "Placing…";
+  const body = { side: trade.side, action: trade.action, amount: Number(trade.amount) };
+  if (trade.action === "buy") body.min_shares = q.shares * 0.99;  // 1 % slippage tolerance
+  else body.min_points = q.points * 0.99;
+  try {
+    const result = await api(`/api/markets/${currentMarket.id}/trade`, { method: "POST", body: JSON.stringify(body) });
+    toast(trade.action === "buy"
+      ? `Bought ${pts(result.shares, 1)} ${trade.side.toUpperCase()} — odds now ${pct(result.prob_after)}`
+      : `Sold for ${pts(result.points, 1)} points`);
+    if (me?.user) me.user.balance = result.balance;
+    renderAccount();
+    if (trade.action === "sell") trade.amount = "50";
+    trade.action = "buy";
+    await openMarket(currentMarket.id, true);
+    refreshOdds();
+    leaderboardCache = null;
+    if (state.mode === "calls") loadCalls();
+    else if (state.mode === "portfolio") loadPortfolio();
+  } catch (error) {
+    toast(error.message);
+    go.disabled = false;
+    go.textContent = `${trade.action === "buy" ? "Buy" : "Sell"} ${trade.side.toUpperCase()}`;
+    if (error.status === 409) openMarket(currentMarket.id, true);
+  }
+}
+
+function onDrawerClick(event) {
+  const target = event.target;
+  if (target.closest("#tradeGo")) return submitTrade();
+  const side = target.closest("[data-trade-side]");
+  if (side) {
+    trade.side = side.dataset.tradeSide;
+    return renderTradeBox();
+  }
+  const action = target.closest("[data-trade-action]");
+  if (action) {
+    trade.action = action.dataset.tradeAction;
+    if (trade.action === "sell") {
+      const held = currentMarket?.my_position?.[trade.side + "_shares"] || 0;
+      const other = trade.side === "yes" ? "no" : "yes";
+      if (held <= 0.01 && (currentMarket?.my_position?.[other + "_shares"] || 0) > 0.01) trade.side = other;
+      trade.amount = String(Math.floor((currentMarket?.my_position?.[trade.side + "_shares"] || 0) * 100) / 100 || "");
+    } else {
+      trade.amount = "50";
+    }
+    return renderTradeBox();
+  }
+  const quick = target.closest("[data-quick]");
+  if (quick) {
+    trade.amount = quick.dataset.quick;
+    $("#tradeAmount").value = trade.amount;
+    return updateQuote();
+  }
+  const fraction = target.closest("[data-quick-frac]");
+  if (fraction) {
+    const held = currentMarket?.my_position?.[trade.side + "_shares"] || 0;
+    const share = Number(fraction.dataset.quickFrac);
+    trade.amount = String(share === 1 ? held : Math.floor(held * share * 100) / 100);
+    $("#tradeAmount").value = trade.amount;
+    return updateQuote();
+  }
+  onMarketUiClick(event);
+}
+
+async function loadRepoCalls(repo) {
+  const box = $("#repoCalls");
+  if (!box) return;
+  try {
+    const data = await api("/api/markets?" + new URLSearchParams({ repo: repo.full_name, status: "all", limit: 10, sort: "new" }));
+    if (!$("#repoCalls")) return;
+    box.classList.remove("muted");
+    box.innerHTML = `<div class="box-head"><b>Calls on this repo</b><button class="btn small primary" data-act="call-repo" data-repo="${escapeHtml(repo.full_name)}">${icon("target")}Make a call</button></div>` +
+      (data.items.length
+        ? data.items.map((m) => `<div class="mini-call" data-market="${m.id}"><span>${escapeHtml(m.question)}</span>${m.status === "open" ? `<b style="color:${probColor(m.prob)}">${pct(m.prob)}</b>` : statusBadge(m)}</div>`).join("")
+        : '<div class="muted small">No calls yet — be the first to call it.</div>');
+  } catch (error) {
+    box.textContent = error.message;
+  }
+}
+
+/* ---------- profiles ---------- */
+async function openProfile(login) {
+  if (!canTrade() || !login) return;
+  openMarketId = null;
+  $("#drawer").classList.add("open");
+  $("#drawerBg").classList.add("open");
+  $("#dbody").innerHTML = '<div class="skeleton"></div>';
+  let p;
+  try {
+    p = await api("/api/users/" + encodeURIComponent(login));
+  } catch (error) {
+    $("#dhead").innerHTML = `<div class="name" style="flex:1">@${escapeHtml(login)}</div><button class="ghost-icon" id="closeDrawer" aria-label="Close">${icon("x")}</button>`;
+    $("#closeDrawer").onclick = closeDetails;
+    $("#dbody").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+    return;
+  }
+  const s = p.stats;
+  $("#dhead").innerHTML = `
+    <img class="avatar" src="${escapeHtml(avatarSrc(p.user.avatar_url))}" alt="">
+    <div style="flex:1;min-width:0"><div class="name">@${escapeHtml(p.user.login)}</div><div class="muted" style="font-size:12.5px">Calling since ${new Date(p.user.joined * 1000).toLocaleDateString()}</div></div>
+    <a class="btn small" href="https://github.com/${escapeHtml(p.user.login)}" target="_blank" rel="noopener">${icon("external")}GitHub</a>
+    <button class="ghost-icon" id="closeDrawer" aria-label="Close">${icon("x")}</button>`;
+  $("#closeDrawer").onclick = closeDetails;
+  $("#dbody").innerHTML = `
+    <div class="kpis4">
+      <div class="kpi"><div class="v ${pnlClass(s.profit)}">${signedPts(s.profit)}</div><div class="k">Trading profit</div></div>
+      <div class="kpi"><div class="v">${s.accuracy === null ? "—" : Math.round(s.accuracy * 100) + "%"}</div><div class="k">Accuracy</div></div>
+      <div class="kpi"><div class="v">${s.settled}</div><div class="k">Settled calls</div></div>
+      <div class="kpi"><div class="v">${s.trades}</div><div class="k">Trades</div></div>
+    </div>
+    <div class="chart"><b>Best early calls</b>${p.best_calls.length ? `<div class="feed">${p.best_calls.map((call) => `<div class="row" data-market="${call.market_id}" style="cursor:pointer"><div class="grow" style="white-space:normal">Bought <b>${call.side.toUpperCase()}</b> at <b>${pct(call.price)}</b> — ${escapeHtml(call.question)}</div></div>`).join("")}</div>` : '<div class="muted small">None yet.</div>'}</div>
+    <div class="chart"><b>Open positions</b>${p.open_positions.length ? `<div class="feed">${p.open_positions.map((o) => `<div class="row" data-market="${o.market_id}" style="cursor:pointer"><div class="grow" style="white-space:normal">${escapeHtml(o.question)}</div><b class="${o.side === "yes" ? "pos" : "neg"}">${o.side.toUpperCase()} ${pts(o.shares, 0)}</b><span class="muted">${pct(o.prob)}</span></div>`).join("")}</div>` : '<div class="muted small">None.</div>'}</div>
+    <div class="chart"><b>Calls created</b>${p.created.length ? p.created.map((m) => `<div class="mini-call" data-market="${m.id}"><span>${escapeHtml(m.question)}</span>${m.status === "open" ? `<b>${pct(m.prob)}</b>` : statusBadge(m)}</div>`).join("") : '<div class="muted small">None.</div>'}</div>`;
+}
+
+/* ---------- create a call ---------- */
+let callKind = "stars_reach";
+let suggestTimer = null;
+let suggestSeq = 0;
+
+function openCallModal(prefill = {}) {
+  if (!canTrade()) return;
+  if (!me?.user) {
+    signIn();
+    return;
+  }
+  callKind = prefill.kind || "stars_reach";
+  $("#callRepo").value = prefill.repo || "";
+  $("#callRepoB").value = "";
+  $("#callTarget").value = "";
+  $("#callDays").value = callKind === "versus" ? 14 : 30;
+  $("#callRepoInfo").textContent = "";
+  $("#callPreview").textContent = "";
+  syncCallKind();
+  $("#callModal").classList.add("open");
+  setTimeout(() => (prefill.repo ? $("#callTarget") : $("#callRepo")).focus(), 50);
+  if (prefill.repo) refreshSuggestion(true);
+}
+
+function syncCallKind() {
+  document.querySelectorAll("#callKind button").forEach((button) => button.classList.toggle("on", button.dataset.kind === callKind));
+  $("#callStarsFields").hidden = callKind !== "stars_reach";
+  $("#callVersusFields").hidden = callKind !== "versus";
+  $("#callDays").min = callKind === "versus" ? 7 : 3;
+  $("#callDays").max = callKind === "versus" ? 90 : 180;
+}
+
+function refreshSuggestion(resetTarget = false) {
+  clearTimeout(suggestTimer);
+  suggestTimer = setTimeout(async () => {
+    const repo = $("#callRepo").value.trim();
+    if (!repo) {
+      $("#callRepoInfo").textContent = "";
+      return;
+    }
+    const seq = ++suggestSeq;
+    const params = new URLSearchParams({ repo, days: $("#callDays").value || 30 });
+    const typedTarget = $("#callTarget").value;
+    if (!resetTarget && typedTarget && callKind === "stars_reach") params.set("target", typedTarget);
+    $("#callRepoInfo").textContent = "Looking up the repo…";
+    try {
+      const s = await api("/api/markets/suggest?" + params);
+      if (seq !== suggestSeq) return;
+      if (resetTarget || !$("#callTarget").value) $("#callTarget").value = s.target;
+      const r = s.repo;
+      $("#callRepoInfo").innerHTML = `<b style="color:var(--text)">${escapeHtml(r.full_name)}</b> · ${formatNumber(r.stars)}★ now · ${r.rate_per_day ? "~" + formatNumber(r.rate_per_day) + "★/day" : "no recent rate"} (${RATE_SOURCES[r.rate_source] || r.rate_source})` +
+        (s.open_calls.length ? `<div style="margin-top:4px">Already open: ${s.open_calls.map((c) => `<a class="user-link" data-market="${c.id}">${escapeHtml(c.question)} (${pct(c.prob)})</a>`).join(" · ")}</div>` : "");
+      $("#callPreview").innerHTML = callKind === "stars_reach" ? `Opening odds from the momentum model: <b>${pct(s.model_prob)}</b>` : "";
+    } catch (error) {
+      if (seq === suggestSeq) $("#callRepoInfo").innerHTML = `<span class="error-text">${escapeHtml(error.message)}</span>`;
+    }
+  }, 300);
+}
+
+async function createCall() {
+  const payload = { kind: callKind, repo: $("#callRepo").value.trim(), days: Number($("#callDays").value) };
+  if (callKind === "stars_reach") payload.target = Number($("#callTarget").value);
+  else payload.repo_b = $("#callRepoB").value.trim();
+  const button = $("#callCreate");
+  button.disabled = true;
+  button.textContent = "Creating…";
+  try {
+    const result = await api("/api/markets", { method: "POST", body: JSON.stringify(payload) });
+    $("#callModal").classList.remove("open");
+    toast("Call created — you're the market maker's first customer");
+    await refreshMe();
+    refreshOdds();
+    if (state.mode === "calls") loadCalls();
+    openMarket(result.market.id);
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Create call";
+  }
+}
+
+function initEarlyStar() {
+  $("#account").addEventListener("click", onMarketUiClick);
+  $("#status").addEventListener("click", (event) => {
+    if (MARKET_MODES.includes(state.mode)) onMarketUiClick(event);
+  });
+  $("#status").addEventListener("change", (event) => {
+    const field = event.target.dataset.cfield;
+    if (field) {
+      state[field] = event.target.value;
+      load();
+    }
+  });
+  $("#marketAside").addEventListener("click", onMarketUiClick);
+  $("#dbody").addEventListener("click", onDrawerClick);
+  $("#dhead").addEventListener("click", (event) => {
+    if (!event.target.closest("#closeDrawer")) onMarketUiClick(event);
+  });
+  $("#dbody").addEventListener("input", (event) => {
+    if (event.target.id === "tradeAmount") {
+      trade.amount = event.target.value;
+      updateQuote();
+    }
+  });
+  $("#dbody").addEventListener("keydown", (event) => {
+    if (event.target.id === "tradeAmount" && event.key === "Enter" && trade.quote) submitTrade();
+  });
+  $("#callKind").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-kind]");
+    if (!button) return;
+    callKind = button.dataset.kind;
+    $("#callDays").value = callKind === "versus" ? 14 : 30;
+    syncCallKind();
+    refreshSuggestion(true);
+  });
+  $("#callRepo").addEventListener("change", () => refreshSuggestion(true));
+  $("#callTarget").addEventListener("input", () => refreshSuggestion(false));
+  $("#callDays").addEventListener("input", () => refreshSuggestion(false));
+  $("#callCancel").onclick = () => $("#callModal").classList.remove("open");
+  $("#callCreate").onclick = createCall;
+  $("#callModal").addEventListener("click", (event) => {
+    const market = event.target.closest("[data-market]");
+    if (market) {
+      $("#callModal").classList.remove("open");
+      openMarket(Number(market.dataset.market));
+    }
+  });
+  $("#devCancel").onclick = () => $("#signinModal").classList.remove("open");
+  $("#devGo").onclick = devSignIn;
+  $("#devLogin").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") devSignIn();
   });
 }
 
