@@ -824,7 +824,9 @@ def make_handler(service: CollectorService, market_service: MarketService, confi
 
         # ---- handlers
         def serve_index(self):
-            body = (BASE_DIR / "index.html").read_bytes()
+            body = (BASE_DIR / "index.html").read_bytes().replace(
+                b'<meta name="earlystar-host" content="">', b'<meta name="earlystar-host" content="server">', 1
+            )
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))

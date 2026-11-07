@@ -52,7 +52,9 @@ def export(out_dir: Path) -> dict:
         shutil.rmtree(out_dir)
     data_dir = out_dir / "data"
     data_dir.mkdir(parents=True)
-    shutil.copy(BASE_DIR / "index.html", out_dir / "index.html")
+    index = (BASE_DIR / "index.html").read_text(encoding="utf-8")
+    index = index.replace('<meta name="earlystar-host" content="">', '<meta name="earlystar-host" content="static">', 1)
+    (out_dir / "index.html").write_text(index, encoding="utf-8")
     # Installable web app (PWA): manifest, service worker and icons.
     for name in ("manifest.webmanifest", "sw.js"):
         shutil.copy(BASE_DIR / name, out_dir / name)

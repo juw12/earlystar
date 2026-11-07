@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="earlystar-host" content="">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EarlyStar — find GitHub repos before they trend</title>
@@ -30,7 +31,7 @@
     color-scheme: light;
     --bg: #fafafa; --surface: #ffffff; --surface-2: #f4f4f5; --surface-3: #e9e9ec;
     --border: #e4e4e7; --border-strong: #d4d4d8;
-    --text: #09090b; --text-2: #3f3f46; --muted: #71717a; --faint: #a1a1aa;
+    --text: #09090b; --text-2: #3f3f46; --muted: #71717a; --faint: #6e6e78;
     --accent: #4f46e5; --accent-soft: #eef2ff; --accent-text: #4338ca;
     --good: #15803d; --good-soft: #ecfdf3;
     --warn: #c2410c; --warn-soft: #fff4ec;
@@ -45,7 +46,7 @@
     color-scheme: dark;
     --bg: #09090b; --surface: #111113; --surface-2: #19191c; --surface-3: #242428;
     --border: #232327; --border-strong: #36363c;
-    --text: #fafafa; --text-2: #d4d4d8; --muted: #a1a1aa; --faint: #71717a;
+    --text: #fafafa; --text-2: #d4d4d8; --muted: #a1a1aa; --faint: #8e8e98;
     --accent: #818cf8; --accent-soft: rgba(129, 140, 248, .12); --accent-text: #a5b4fc;
     --good: #4ade80; --good-soft: rgba(74, 222, 128, .10);
     --warn: #fb923c; --warn-soft: rgba(251, 146, 60, .12);
@@ -63,7 +64,7 @@
   :focus-visible { outline: none; box-shadow: var(--ring); border-radius: 6px; }
   svg.i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
   .muted { color: var(--muted); }
-  kbd { font: 500 11px/1 ui-monospace, "SF Mono", Consolas, monospace; padding: 3px 5px; border: 1px solid var(--border);
+  kbd { font: 500 12px/1 ui-monospace, "SF Mono", Consolas, monospace; padding: 3px 5px; border: 1px solid var(--border);
         border-bottom-width: 2px; border-radius: 5px; color: var(--muted); background: var(--surface); }
 
   /* ---------- header ---------- */
@@ -170,7 +171,7 @@
   .name { font-size: 15px; font-weight: 600; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .name .owner { color: var(--muted); font-weight: 450; }
   .name:hover { color: var(--accent-text); }
-  .tag { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  .tag { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 12px; font-weight: 600;
          background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; flex: none; }
   .tag svg { width: 11px; height: 11px; }
   .new-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -185,7 +186,7 @@
   .lang-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
   .meta .lang-dot { margin: 0; }
   .topics { display: inline-flex; gap: 5px; flex-wrap: wrap; }
-  .chip { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; background: var(--surface-2); color: var(--text-2); cursor: pointer;
+  .chip { font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--surface-2); color: var(--text-2); cursor: pointer;
           border: 1px solid var(--border); transition: border-color .12s, color .12s; white-space: nowrap; }
   .chip:hover { border-color: var(--accent); color: var(--accent-text); }
   .chip b { color: var(--faint); font-weight: 500; margin-left: 3px; }
@@ -199,9 +200,9 @@
   .metric { text-align: right; padding-top: 3px; }
   .metric-value { font-size: 19px; font-weight: 650; letter-spacing: -.025em; line-height: 1.2; font-variant-numeric: tabular-nums; }
   .metric-value.up { color: var(--good); }
-  .metric-label { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-  .metric-src { font-size: 11px; color: var(--faint); }
-  .momentum { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .metric-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .metric-src { font-size: 12px; color: var(--faint); }
+  .momentum { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
   .meter { width: 52px; height: 4px; background: var(--surface-3); border-radius: 99px; overflow: hidden; display: inline-block; }
   .meter i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
   @media (max-width: 720px) {
@@ -239,13 +240,13 @@
   .stats-grid { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
   .kpi { background: var(--surface); padding: 12px; min-width: 0; }
   .kpi .v { font-size: 19px; font-weight: 650; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
-  .kpi .k { font-size: 11.5px; color: var(--muted); }
+  .kpi .k { font-size: 12px; color: var(--muted); }
   .riser { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
   .riser img { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); }
-  .riser .k { font-size: 11.5px; color: var(--muted); }
+  .riser .k { font-size: 12px; color: var(--muted); }
   .riser .n { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .riser .r { margin-left: auto; text-align: right; font-weight: 650; color: var(--good); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .riser .r span { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+  .riser .r span { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
   .hbar { display: grid; grid-template-columns: 92px 1fr 28px; gap: 10px; align-items: center; font-size: 12.5px; padding: 4px 0; cursor: pointer; color: var(--text-2); }
   .hbar:hover span:first-child { color: var(--accent-text); }
   .hbar .track { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
@@ -266,7 +267,7 @@
   .drawer .dbody { padding: 20px 22px; overflow: auto; flex: 1; }
   .drawer iframe { width: 100%; min-height: 60vh; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
   .chart { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
-  .chart svg text { fill: var(--muted); font-size: 11px; }
+  .chart svg text { fill: var(--muted); font-size: 12px; }
   .chart .topics { display: flex; margin-top: 8px; }
   .badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
   .badge.delta { background: var(--good-soft); color: var(--good); }
@@ -313,7 +314,7 @@
   .mrow .q { font-weight: 600; font-size: 14.5px; letter-spacing: -.01em; margin-bottom: 6px; line-height: 1.35; }
   .odds { text-align: right; }
   .prob { font-size: 22px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
-  .chg { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 16px; }
+  .chg { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 16px; }
   .chg.up, .pos { color: var(--good); }
   .chg.down, .neg { color: var(--bad); }
   .pbar { height: 4px; background: color-mix(in srgb, var(--bad) 25%, var(--surface-3)); border-radius: 99px; overflow: hidden; margin-top: 4px; }
@@ -384,7 +385,7 @@
   .modal .inner.wide { width: min(560px, 94vw); }
   .modal .seg { margin-bottom: 12px; }
   .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
-  .day-grid div { border: 1px solid var(--border); border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 11.5px; color: var(--muted); }
+  .day-grid div { border: 1px solid var(--border); border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 12px; color: var(--muted); }
   .day-grid div b { display: block; font-size: 15px; color: var(--text); }
   .day-grid .hit { background: var(--good-soft); border-color: transparent; color: var(--good); }
   .day-grid .hit b { color: var(--good); }
@@ -412,6 +413,18 @@
     .nav { order: 3; width: 100%; justify-content: space-between; }
     .nav button .lbl { display: none; }
     .nav button { padding: 0 10px; }
+  }
+
+  /* Phone tap targets (hone A5) */
+  @media (max-width: 600px) {
+    .field { height: 34px; }
+    .btn.small { height: 32px; }
+    .switch input { width: 32px; height: 32px; padding: 7px 0; background-clip: content-box; }
+    .switch input::before { top: 9px; }
+    .switch input:checked::before { transform: translateX(14px); }
+    .name { display: inline-flex; align-items: center; min-height: 32px; }
+    .chip { display: inline-flex; align-items: center; min-height: 32px; }
+    .icon-btn { width: 32px; height: 32px; }
   }
 </style>
 </head>
@@ -683,7 +696,10 @@ let dataMode = null;  // "server" | "static" | null
 
 async function detectServer() {
   if (!location.protocol.startsWith("http")) return false;
-  const candidates = [["server", "/api/health"], ["static", "data/health.json?t=" + Date.now()]];
+  // server.py stamps this meta "server", export_static.py stamps it "static"; a plain copy probes nothing.
+  const host = document.querySelector('meta[name="earlystar-host"]')?.content || "";
+  const candidates = [["server", "/api/health"], ["static", "data/health.json?t=" + Date.now()]]
+    .filter(([mode]) => mode === host);
   for (const [mode, url] of candidates) {
     try {
       const response = await fetch(url, { cache: "no-store" });
@@ -1508,7 +1524,7 @@ function badgeBlock(fullName) {
     <div style="margin-top:14px"><b style="color:var(--text)">README badge</b>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
         <img src="${escapeHtml(imageUrl)}" alt="EarlyStar badge" height="20">
-        <code style="flex:1;min-width:220px;font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;overflow:auto;white-space:nowrap">${escapeHtml(markdown)}</code>
+        <code style="flex:1;min-width:220px;font-size:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;overflow:auto;white-space:nowrap">${escapeHtml(markdown)}</code>
         <button class="btn small" id="copyBadge" data-markdown="${escapeHtml(markdown)}">${icon("copy")}Copy</button>
       </div>
     </div>`;
