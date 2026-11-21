@@ -4,13 +4,13 @@
     python3 android/smoke.py android/dist/EarlyStar-android.apk
 
 The app is a release build, so the page inside cannot be read from outside. This checks what can be:
-the package installs, the window is the app's, the process is still there after 25 s and nothing crashed.
+the package installs, the window is the app's, the process is still there after 25 s, the shell's own log
+says the live page finished loading, and nothing crashed.
 A screenshot (android-emulator.png) is saved next to the APK to look at. Needs adb on PATH.
 """
 
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -29,7 +29,8 @@ def main():
     apk = os.path.abspath(sys.argv[1])
     out = os.path.dirname(apk)
     with open(os.path.join(HERE, "app.json"), encoding="utf-8") as handle:
-        package = json.load(handle)["id"]
+        app = json.load(handle)
+    package, site, shell_tag = app["id"], app["url"], app["name"] + "Shell"
     failures = []
 
     def check(condition, label):
@@ -38,6 +39,13 @@ def main():
             failures.append(label)
 
     adb("wait-for-device")
+    # A freshly started emulator answers adb before it can look up a name: wait until it can, so a slow
+    # emulator is not mistaken for an app that cannot reach its site.
+    host = site.split("/")[2]
+    for _ in range(30):
+        if "1 received" in adb("shell", "ping", "-c", "1", "-W", "3", host, check=False) or "1 packets received" in adb("shell", "ping", "-c", "1", "-W", "3", host, check=False):
+            break
+        time.sleep(3)
     adb("install", "-r", apk)
     adb("logcat", "-c", check=False)
     adb("shell", "am", "start", "-W", "-n", package + "/.MainActivity")
@@ -55,12 +63,12 @@ def main():
     focus = adb("shell", "dumpsys", "window", check=False)
     focused = [line.strip() for line in focus.splitlines() if "mCurrentFocus" in line or "mFocusedApp" in line]
     check(any(package in line for line in focused), "its window is in front (%s)" % (focused[0] if focused else "no focus line"))
-    # What is on the screen, as the accessibility tree tells it: the live page, not the "no connection" page.
-    adb("shell", "uiautomator", "dump", "/sdcard/window.xml", check=False)
-    screen = adb("shell", "cat", "/sdcard/window.xml", check=False)
-    words = sorted(set(re.findall(r'(?:text|content-desc)="([^"]{3,60})"', screen)))
-    check("reach the internet" not in screen, "the page loaded, not the no-connection page")
-    check(len(words) >= 5, "the page has something on it (%d pieces of text, e.g. %s)" % (len(words), "; ".join(words[:4])))
+    # The shell says in the log which page finished loading, and when one did not load.
+    said = [line for line in adb("logcat", "-d", "-v", "brief", "-s", shell_tag, check=False).splitlines() if shell_tag in line]
+    finished = [line.split("page finished: ", 1)[1].strip() for line in said if "page finished: " in line]
+    refused = [line.split("did not load: ", 1)[1].strip() for line in said if "did not load: " in line]
+    check(any(page.startswith(site) for page in finished), "the live page finished loading (%s)" % (finished[-1] if finished else "nothing finished"))
+    check(not refused, "no page failed to load (%s)" % (refused[-1] if refused else "none"))
     with open(os.path.join(out, "android-emulator.png"), "wb") as handle:
         handle.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=60).stdout)
     crashes = [line for line in adb("logcat", "-d", "-b", "crash", check=False).splitlines() if package in line]

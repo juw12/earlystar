@@ -101,6 +101,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                android.util.Log.i("EarlyStarShell", "page finished: " + url);
                 view.evaluateJavascript(PAGE_SCRIPT, null);
             }
 
