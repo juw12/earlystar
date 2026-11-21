@@ -12,3 +12,4 @@ desktop/src-tauri/gen/
 !icons/*.png
 logs/
 .env
+!android/**/*.png
