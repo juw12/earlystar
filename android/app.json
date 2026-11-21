@@ -1,0 +1,10 @@
+{
+  "name": "EarlyStar",
+  "id": "io.github.juw12.earlystar",
+  "url": "https://juw12.github.io/earlystar/",
+  "versionName": "1.0.1",
+  "versionCode": 1,
+  "minSdk": 24,
+  "targetSdk": 34,
+  "certSha256": "5f7ac517d3e15610184201a27b7c6b1a329d46bb5144084f05d6f6737863cedf"
+}

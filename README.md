@@ -82,7 +82,7 @@ The apps aren't code-signed yet. On Windows, if SmartScreen appears click **More
 No app store needed: EarlyStar installs straight from the website as an app with its own icon, full screen.
 
 - **iPhone / iPad**: open [juw12.github.io/earlystar](https://juw12.github.io/earlystar/) in **Safari** → Share button → **Add to Home Screen**.
-- **Android**: open it in **Chrome** → tap **Install app** (or ⋮ menu → **Install app / Add to Home screen**).
+- **Android**: download [EarlyStar-android.apk](https://github.com/juw12/earlystar/releases/latest/download/EarlyStar-android.apk), open it and allow "install unknown apps" for your browser once. It is a full-screen window around the live site, like the desktop apps ([`android/`](android/README.md)). Or, without a download: open it in **Chrome** → tap **Install app** (or ⋮ menu → **Install app / Add to Home screen**).
 
 ## Badge for your README
 
