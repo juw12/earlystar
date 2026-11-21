@@ -107,6 +107,8 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) {
+                    // Said in the phone's log, so "no connection" can be told from a page that would not load.
+                    android.util.Log.w("EarlyStarShell", "the page did not load: " + error.getErrorCode() + " " + error.getDescription() + " " + request.getUrl());
                     view.loadUrl("file:///android_asset/offline.html");
                 }
             }

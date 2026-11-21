@@ -10,6 +10,7 @@ A screenshot (android-emulator.png) is saved next to the APK to look at. Needs a
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -54,6 +55,12 @@ def main():
     focus = adb("shell", "dumpsys", "window", check=False)
     focused = [line.strip() for line in focus.splitlines() if "mCurrentFocus" in line or "mFocusedApp" in line]
     check(any(package in line for line in focused), "its window is in front (%s)" % (focused[0] if focused else "no focus line"))
+    # What is on the screen, as the accessibility tree tells it: the live page, not the "no connection" page.
+    adb("shell", "uiautomator", "dump", "/sdcard/window.xml", check=False)
+    screen = adb("shell", "cat", "/sdcard/window.xml", check=False)
+    words = sorted(set(re.findall(r'(?:text|content-desc)="([^"]{3,60})"', screen)))
+    check("reach the internet" not in screen, "the page loaded, not the no-connection page")
+    check(len(words) >= 5, "the page has something on it (%d pieces of text, e.g. %s)" % (len(words), "; ".join(words[:4])))
     with open(os.path.join(out, "android-emulator.png"), "wb") as handle:
         handle.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=60).stdout)
     crashes = [line for line in adb("logcat", "-d", "-b", "crash", check=False).splitlines() if package in line]
