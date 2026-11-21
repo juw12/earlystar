@@ -43,7 +43,8 @@ def main():
     # emulator is not mistaken for an app that cannot reach its site.
     host = site.split("/")[2]
     for _ in range(30):
-        if "1 received" in adb("shell", "ping", "-c", "1", "-W", "3", host, check=False) or "1 packets received" in adb("shell", "ping", "-c", "1", "-W", "3", host, check=False):
+        # An emulator answers no ping from outside; "PING name (address)" is enough: the name was looked up.
+        if adb("shell", "ping", "-c", "1", "-W", "2", host, check=False).startswith("PING "):
             break
         time.sleep(3)
     adb("install", "-r", apk)
