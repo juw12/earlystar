@@ -59,7 +59,16 @@ def main():
     crashes = [line for line in adb("logcat", "-d", "-b", "crash", check=False).splitlines() if package in line]
     check(not crashes, "no crash in logcat")
 
+    log = adb("logcat", "-d", "-v", "brief", check=False)
+    with open(os.path.join(out, "android-logcat.txt"), "w", encoding="utf-8") as handle:
+        handle.write(log)
     if failures:
+        # What the phone said about the app, so a failed run can be understood from its log.
+        words = (package, "AndroidRuntime", "FATAL", "Killing", "has died", "WebViewFactory", "chromium", "ActivityTaskManager: Displayed")
+        told = [line for line in log.splitlines() if any(word in line for word in words)]
+        print("\nfrom logcat (%d lines about the app, the last 50):" % len(told))
+        for line in told[-50:]:
+            print("   " + line[:220])
         print("\n%d check(s) failed" % len(failures))
         sys.exit(1)
     print("\nEarlyStar for Android installs, opens and stays up")
