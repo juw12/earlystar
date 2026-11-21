@@ -1,0 +1,136 @@
+name: Android app
+
+# Builds EarlyStar-android.apk (android/: a full-screen window around the live site), signs it with the key in
+# the repository's secrets, opens it on an emulator and attaches it to the release of the current version.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: "Build and sign the .apk (no Gradle: aapt2, javac, d8, zipalign, apksigner)"
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          tools=$(ls -d "$ANDROID_HOME"/build-tools/34.* 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$tools" ]; then tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1); fi
+          platform="$ANDROID_HOME/platforms/android-34"
+          if [ ! -f "$platform/android.jar" ]; then platform=$(ls -d "$ANDROID_HOME"/platforms/android-* | sort -V | tail -n 1); fi
+          export ANDROID_BUILD_TOOLS="$tools" ANDROID_JAR="$platform/android.jar"
+          echo "build-tools: $tools, platform: $platform"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            printf '%s' "$KEYSTORE_PASSWORD" > "$RUNNER_TEMP/release-password.txt"
+            python3 android/build.py --keystore "$RUNNER_TEMP/release.p12" --password-file "$RUNNER_TEMP/release-password.txt" --alias earlystar
+            echo "SIGNED=release" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No signing key secret here (a pull request from a fork): signed with a throwaway key."
+            python3 android/build.py
+            echo "SIGNED=throwaway" >> "$GITHUB_ENV"
+          fi
+          echo "APKSIGNER=$tools/apksigner" >> "$GITHUB_ENV"
+
+      - name: The certificate is the one app.json names
+        if: env.SIGNED == 'release'
+        run: |
+          expected=$(python3 -c "import json; print(json.load(open('android/app.json'))['certSha256'])")
+          found=$("$APKSIGNER" verify --print-certs android/dist/EarlyStar-android.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          echo "expected $expected"
+          echo "found    $found"
+          [ "$expected" = "$found" ]
+          (cd android/dist && sha256sum EarlyStar-android.apk > EarlyStar-android.apk.sha256 && cat EarlyStar-android.apk.sha256)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: earlystar-android
+          path: android/dist/
+          if-no-files-found: error
+
+  emulator:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: earlystar-android
+          path: android/dist
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Open the app on an emulator and check it stays up
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: python3 android/smoke.py android/dist/EarlyStar-android.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: earlystar-android-emulator-check
+          path: |
+            android/dist/*.png
+            android/dist/android-logcat.txt
+          retention-days: 7
+
+  publish:
+    needs: [build, emulator]
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: earlystar-android
+          path: dist
+      # The desktop workflow makes the release of a tag; a run started by hand attaches to the release of the
+      # version in desktop/src-tauri/tauri.conf.json. A file that is already there is never replaced.
+      - name: Attach to the release when it has no Android file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="v$(python3 -c "import json; print(json.load(open('desktop/src-tauri/tauri.conf.json'))['version'])")"
+          fi
+          for attempt in $(seq 1 40); do
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then break; fi
+            echo "no release $tag yet (the desktop workflow makes it); waiting"
+            sleep 30
+          done
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::There is no release $tag to attach the Android app to."
+            exit 1
+          fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qx 'EarlyStar-android.apk'; then
+            echo "$tag already has its Android file"
+            exit 0
+          fi
+          gh release upload "$tag" dist/EarlyStar-android.apk dist/EarlyStar-android.apk.sha256 --repo "$GITHUB_REPOSITORY"
+          echo "Attached EarlyStar-android.apk to $tag"
