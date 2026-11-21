@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Build and sign the .apk (no Gradle: aapt2, javac, d8, zipalign, apksigner)
+      - name: "Build and sign the .apk (no Gradle: aapt2, javac, d8, zipalign, apksigner)"
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
