@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,5 +64,18 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      # deploy-pages asks for the artifact less than a second after it is uploaded, and now and then GitHub
+      # does not list it yet ("No artifacts named github-pages were found": 3 of the 94 runs up to
+      # 2026-11-25). Scheduled runs come hours apart, so one miss leaves the site stale for hours.
+      # Wait a little first, and try once more after a miss.
+      - name: Give the artifact a moment to be listed
+        run: sleep 10
       - id: deploy
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait before the second try
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 45
+      - id: deploy_retry
+        if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
