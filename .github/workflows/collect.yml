@@ -23,7 +23,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore history database from the data branch
         run: |
@@ -60,8 +60,8 @@ jobs:
       - name: Build static site
         run: python3 export_static.py site
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       # deploy-pages asks for the artifact less than a second after it is uploaded, and now and then GitHub
@@ -71,11 +71,11 @@ jobs:
       - name: Give the artifact a moment to be listed
         run: sleep 10
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         continue-on-error: true
       - name: Wait before the second try
         if: steps.deploy.outcome == 'failure'
         run: sleep 45
       - id: deploy_retry
         if: steps.deploy.outcome == 'failure'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
