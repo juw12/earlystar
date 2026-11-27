@@ -19,7 +19,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def adb(*args, check=True):
-    result = subprocess.run(["adb", *args], capture_output=True, text=True, timeout=180)
+    # logcat can hold a byte that is not UTF-8; one such byte must not fail the whole check.
+    result = subprocess.run(
+        ["adb", *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180
+    )
     if check and result.returncode != 0:
         raise SystemExit("adb %s failed: %s" % (" ".join(args), result.stderr.strip()))
     return result.stdout
