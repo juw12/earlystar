@@ -27,7 +27,7 @@ jobs:
         shell: bash
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
@@ -37,7 +37,7 @@ jobs:
         with:
           workspaces: desktop/src-tauri
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
 
@@ -56,7 +56,7 @@ jobs:
           mkdir -p out
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg out/EarlyStar-macOS.dmg
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: earlystar-${{ matrix.name }}
           path: desktop/out/*
@@ -66,9 +66,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
